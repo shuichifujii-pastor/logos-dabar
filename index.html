@@ -249,6 +249,11 @@
     .ring-amber-500\/30 { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3); }
     .focus\:ring-amber-500:focus { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.45); border-color: #f59e0b; }
   </style>
+  <style>
+    .ld-nav-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .ld-nav-book { flex: 1 1 220px; min-width: 0; }
+    .ld-nav-num { flex: 0 0 6.5rem; }
+  </style>
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#1c1917" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -299,59 +304,38 @@
 
     <!-- VIEW 1: INTERLINEAR READER -->
     <section id="viewReader" class="space-y-5">
+      <!-- Full Bible Navigator (bible/*.js) -->
+      <div class="bg-white rounded-xl border border-amber-200 p-4 shadow-sm space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-amber-900 uppercase tracking-wider">📖 聖書全巻から選ぶ（原語・Strong番号・文法・口語訳）</span>
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs text-amber-900 font-medium">
+              <input id="fullCuratedOnly" type="checkbox" class="rounded text-amber-600 focus:ring-amber-500" />
+              <span>★ 解説つきの節だけ表示</span>
+            </label>
+            <span id="fullBibleStatus" class="text-[11px] text-stone-500"></span>
+          </div>
+        </div>
+        <div class="ld-nav-row">
+          <select id="fullBookSelect" aria-label="書" class="ld-nav-book rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
+          <select id="fullChapterSelect" aria-label="章" class="ld-nav-num rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
+          <select id="fullVerseSelect" aria-label="節" class="ld-nav-num rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
+          <button id="fullOpenCuratedBtn" type="button" class="hidden px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium transition">📝 この節の詳しい解説を見る</button>
+        </div>
+        <p class="text-[10px] text-stone-400">原語データ: STEPBible.org（Tyndale House Cambridge, CC BY 4.0）／ 日本語訳: 口語訳聖書（日本聖書協会 1954・1955年、パブリックドメイン）</p>
+      </div>
+
       <!-- Filter & Verse Selector Bar -->
       <div class="bg-white rounded-xl border border-stone-200 p-4 shadow-sm space-y-3">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-          <!-- Testament Filter -->
-          <div class="md:col-span-3">
-            <label for="testamentSelect" class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">聖書区分（原語）</label>
-            <select id="testamentSelect" class="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-              <option value="ALL">すべて（全494節：詩編・箴言・ルカ・フィリピほか）</option>
-              <option value="LUKE_ALL">ルカによる福音書（全283節：指定12箇所 全264節＋主要聖句）</option>
-              <option value="LUK_1_5_38">　├ ルカ 1:5–38（ヨハネとイエスの誕生予告・全34節）</option>
-              <option value="LUK_2_1_52">　├ ルカ 2:1–52（主の降誕・シメオンとアンナ・12歳のイエス・全52節）</option>
-              <option value="LUK_5_1_11">　├ ルカ 5:1–11（奇跡の大漁とペテロの召命・全11節）</option>
-              <option value="LUK_7_36_50">　├ ルカ 7:36–50（罪深い女性の赦しと愛・全15節）</option>
-              <option value="LUK_10_1_37">　├ ルカ 10:1–37（72人の派遣・善きサマリア人のたとえ・全37節）</option>
-              <option value="LUK_11_1_13">　├ ルカ 11:1–13（主の祈り・真夜中の友・聖霊の賜物・全13節）</option>
-              <option value="LUK_12_35_48">　├ ルカ 12:35–48（目を覚まして待つしもべ・忠実な管理人・全14節）</option>
-              <option value="LUK_16_19_31">　├ ルカ 16:19–31（金持ちとラザロのたとえ・全13節）</option>
-              <option value="LUK_19_1_10">　├ ルカ 19:1–10（徴税人頭ザアカイの救い・全10節）</option>
-              <option value="LUK_22_24_62">　├ ルカ 22:24–62（仕える者・ゲツセマネの苦闘・ペテロの否認・全39節）</option>
-              <option value="LUK_23_32_43">　├ ルカ 23:32–43（十字架の赦しの祈り・悔い改めた犯罪人・全12節）</option>
-              <option value="LUK_24_36_49">　└ ルカ 24:36–49（復活の主の顕現・聖書の開眼・証人の派遣・全14節）</option>
-              <option value="PSALMS_ALL">詩編（1篇・23篇・49篇・73篇・94篇・112篇 全89節）</option>
-              <option value="PS_1">　├ 詩編 1篇（1:1〜1:6・全6節）</option>
-              <option value="PS_49">　├ 詩編 49篇（49:1〜49:21・全21節）</option>
-              <option value="PS_73">　├ 詩編 73篇（73:1〜73:28・全28節）</option>
-              <option value="PS_94">　├ 詩編 94篇（94:1〜94:23・全23節）</option>
-              <option value="PS_112">　└ 詩編 112篇（112:1〜112:10・全10節）</option>
-              <option value="PROV_10">箴言 10章（10:1〜10:12・全12節）</option>
-              <option value="PHIL_ALL">フィリピ書 全巻（1章〜4章・全104節）</option>
-              <option value="PHIL_1">　├ フィリピ 1章（1:1〜1:30）</option>
-              <option value="PHIL_2">　├ フィリピ 2章（2:1〜2:30）</option>
-              <option value="PHIL_3">　├ フィリピ 3章（3:1〜3:21）</option>
-              <option value="PHIL_4">　└ フィリピ 4章（4:1〜4:23）</option>
-              <option value="OT">旧約聖書すべて（ヘブライ語 / 右→左）</option>
-              <option value="NT">新約聖書すべて（ギリシア語 / 左→右）</option>
-            </select>
-          </div>
-
-          <!-- Verse Select -->
-          <div class="md:col-span-5">
-            <label for="verseSelect" class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">聖書の節を選択</label>
-            <select id="verseSelect" class="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
-            </select>
-          </div>
-
+        <div>
           <!-- Quick Search Input -->
-          <div class="md:col-span-4">
+          <div>
             <div class="flex items-center justify-between mb-1">
-              <label for="quickFilterInput" class="block text-xs font-semibold text-stone-500 uppercase tracking-wider">日本語訳・原語・Strong番号で検索</label>
+              <label for="quickFilterInput" class="block text-xs font-semibold text-stone-500 uppercase tracking-wider">聖書全巻を検索（口語訳・日本語の意味・原語・Strong番号）</label>
               <button id="openFullJpSearchBtn" type="button" class="text-[11px] font-semibold text-amber-700 hover:underline">🔍 全文一覧検索へ →</button>
             </div>
             <div class="relative">
-              <input id="quickFilterInput" type="text" placeholder="日本語訳の言葉で検索（例: 幸い, 赦し, 平和, 憐れみ, 飼い葉桶, 陰府...）" class="w-full rounded-lg border border-stone-300 bg-stone-50 pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <input id="quickFilterInput" type="text" placeholder="例: 幸い / 赦し / 平和 / ἀγάπη / H7965 / G26（スペースで区切るとすべてを含む節）" class="w-full rounded-lg border border-stone-300 bg-stone-50 pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               <button id="clearQuickFilterBtn" type="button" title="クリア" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs font-bold">✕</button>
             </div>
           </div>
@@ -451,7 +435,7 @@
 
             <!-- Theological / Exegetical Note -->
             <div class="p-3 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs sm:text-sm text-stone-700 leading-relaxed">
-              <span class="font-semibold text-amber-900">原典釈義ポイント：</span>
+              <span id="verseCommentaryLabel" class="font-semibold text-amber-900">原典釈義ポイント：</span>
               <span id="verseCommentary">パウロは他の手紙のように「使徒」という権威ある称号を用いず、2章7節でキリストが取られた姿と同じ「ドゥーロイ（しもべ・奴隷）」と自称して手紙を始めます。また新約書簡の中で唯一、宛先に「エピスコポイ（監督たち）」と「ディアコノイ（奉仕者・執事たち）」が明記されています。</span>
             </div>
           </div>
@@ -577,9 +561,9 @@
           <div>
             <h2 class="text-base sm:text-lg font-bold text-stone-900 flex items-center gap-2">
               <span>🔍 聖書日本語訳・逆引きコンコーダンス検索</span>
-              <span id="jpSearchTotalBadge" class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-900">全494節対象</span>
+              <span id="jpSearchTotalBadge" class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-900">聖書全巻対象</span>
             </h2>
-            <p class="text-xs text-stone-500 mt-0.5">日本語訳の言葉（スペース区切りでAND検索可）から聖句を検索し、その日本語に当たるヘブライ語・ギリシア語原語を逆引きできます。</p>
+            <p class="text-xs text-stone-500 mt-0.5">口語訳の本文・各単語の日本語の意味・原語・Strong番号で聖書全巻（約3万1千節）を検索し、その言葉に当たるヘブライ語・ギリシア語を逆引きできます。スペースで区切ると、すべての語を含む節を探します。</p>
           </div>
         </div>
 
@@ -595,22 +579,19 @@
           <div class="md:col-span-4">
             <label for="jpSearchScope" class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">検索対象の範囲</label>
             <select id="jpSearchScope" class="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-              <option value="JP_AND_GLOSS" selected>聖書の日本語訳本文 ＋ 各単語の日本語直訳（グロス）</option>
-              <option value="JP_ONLY">聖書の日本語訳本文のみ（厳密検索）</option>
-              <option value="ALL_FIELDS">日本語訳 ＋ 単語直訳 ＋ 釈義ポイント・語源解説すべて</option>
+              <option value="JP_AND_GLOSS" selected>口語訳の本文 ＋ 各単語の日本語の意味・原語・Strong番号</option>
+              <option value="JP_ONLY">口語訳の本文のみ（厳密検索）</option>
+              <option value="ALL_FIELDS">上記 ＋ 英語の辞書の説明 ＋ ★収録節の釈義ポイント</option>
             </select>
           </div>
 
           <div class="md:col-span-3">
             <label for="jpSearchBookFilter" class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">書巻・区分で絞り込み</label>
             <select id="jpSearchBookFilter" class="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-              <option value="ALL">すべての書巻（旧約・新約 全494節）</option>
-              <option value="OT">旧約聖書すべて（詩編・箴言・創世記・申命記）</option>
-              <option value="NT">新約聖書すべて（ルカ・フィリピ・ヨハネ・マタイ・ローマ）</option>
-              <option value="LUKE">ルカによる福音書のみ（全283節）</option>
-              <option value="PSALMS">詩編のみ（1・23・49・73・94・112篇 全89節）</option>
-              <option value="PROV">箴言のみ（10章 全12節）</option>
-              <option value="PHIL">フィリピの信徒への手紙のみ（全104節）</option>
+              <option value="ALL">すべての書巻（旧約・新約）</option>
+              <option value="OT">旧約聖書すべて</option>
+              <option value="NT">新約聖書すべて</option>
+              <option value="CURATED">★ 解説つきの節だけ</option>
             </select>
           </div>
         </div>
@@ -644,7 +625,7 @@
       <div id="jpReverseLexiconBox" class="hidden bg-amber-50/70 rounded-xl border border-amber-200 p-4 shadow-sm space-y-2">
         <div class="text-xs font-bold text-amber-900 flex items-center justify-between">
           <span id="jpReverseLexiconTitle">この日本語に対応する原語（ヘブライ語・ギリシア語）の逆引き集計</span>
-          <span class="text-[11px] font-normal text-stone-500">原語チップをクリックすると発音＆該当節へ移動します</span>
+          <span class="text-[11px] font-normal text-stone-500">原語をクリックすると発音し、その語（Strong番号）で検索し直します</span>
         </div>
         <div id="jpReverseLexiconChips" class="flex flex-wrap gap-2"></div>
       </div>
@@ -1229,6 +1210,7 @@
     }
     const RAW_VERSE_MAP = new Map(RAW_VERSES.map(r => [r[0], r]));
     function getVerseById(id) {
+      if (id && id.startsWith("full:")) return buildFullVerse(id) || fullVersePlaceholder(id);
       const r = RAW_VERSE_MAP.get(id) || RAW_VERSES[0];
       return r ? hydrateVerse(r) : null;
     }
@@ -2193,111 +2175,6 @@
       return _unifiedLexiconCache;
     }
 
-    // Filter verses based on testament + quickFilterInput
-    function getFilteredVerses() {
-      const testament = document.getElementById("testamentSelect").value;
-      const query = document.getElementById("quickFilterInput").value.trim().toLowerCase();
-
-      return VERSES_META.filter(v => {
-        if (testament === "OT" || testament === "NT") {
-          if (v.testament !== testament) return false;
-        } else if (testament === "PSALMS_ALL") {
-          if (!v.id.startsWith("ps-")) return false;
-        } else if (testament === "PS_1") {
-          if (!v.id.startsWith("ps-1-")) return false;
-        } else if (testament === "PS_49") {
-          if (!v.id.startsWith("ps-49-")) return false;
-        } else if (testament === "PS_73") {
-          if (!v.id.startsWith("ps-73-")) return false;
-        } else if (testament === "PS_94") {
-          if (!v.id.startsWith("ps-94-")) return false;
-        } else if (testament === "PS_112") {
-          if (!v.id.startsWith("ps-112-")) return false;
-        } else if (testament === "LUKE_ALL") {
-          if (!v.id.startsWith("luk-")) return false;
-        } else if (testament.startsWith("LUK_")) {
-          if (!v.id.startsWith("luk-")) return false;
-          const parts = v.id.split("-");
-          const ch = parseInt(parts[1], 10);
-          const vn = parseInt(parts[2], 10);
-          const ranges = {
-            LUK_1_5_38: [1, 5, 38],
-            LUK_2_1_52: [2, 1, 52],
-            LUK_5_1_11: [5, 1, 11],
-            LUK_7_36_50: [7, 36, 50],
-            LUK_10_1_37: [10, 1, 37],
-            LUK_11_1_13: [11, 1, 13],
-            LUK_12_35_48: [12, 35, 48],
-            LUK_16_19_31: [16, 19, 31],
-            LUK_19_1_10: [19, 1, 10],
-            LUK_22_24_62: [22, 24, 62],
-            LUK_23_32_43: [23, 32, 43],
-            LUK_24_36_49: [24, 36, 49]
-          };
-          const rg = ranges[testament];
-          if (rg && (ch !== rg[0] || vn < rg[1] || vn > rg[2])) return false;
-        } else if (testament === "PHIL_ALL") {
-          if (!v.id.startsWith("phil-")) return false;
-        } else if (testament === "PHIL_1") {
-          if (!v.id.startsWith("phil-1-")) return false;
-        } else if (testament === "PHIL_2") {
-          if (!v.id.startsWith("phil-2-")) return false;
-        } else if (testament === "PHIL_3") {
-          if (!v.id.startsWith("phil-3-")) return false;
-        } else if (testament === "PHIL_4") {
-          if (!v.id.startsWith("phil-4-")) return false;
-        } else if (testament === "PROV_10") {
-          if (!v.id.startsWith("prov-10-")) return false;
-        }
-        if (!query) return true;
-        const inVerse =
-          v.reference.toLowerCase().includes(query) ||
-          v.japanese.toLowerCase().includes(query) ||
-          v.originalFull.toLowerCase().includes(query) ||
-          v.commentary.toLowerCase().includes(query);
-        if (inVerse) return true;
-        return v.rawWords.some(w =>
-          w[0].toLowerCase().includes(query) ||
-          w[1].toLowerCase().includes(query) ||
-          w[2].toLowerCase().includes(query) ||
-          w[3].toLowerCase().includes(query) ||
-          w[4].toLowerCase().includes(query) ||
-          w[6].toLowerCase().includes(query) ||
-          w[7].toLowerCase().includes(query)
-        );
-      });
-    }
-
-    function populateVerseSelect() {
-      const select = document.getElementById("verseSelect");
-      const filtered = getFilteredVerses();
-      select.innerHTML = "";
-
-      if (filtered.length === 0) {
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "一致する節がありません（検索条件を変更してください）";
-        select.appendChild(opt);
-        return;
-      }
-
-      const frag = document.createDocumentFragment();
-      filtered.forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = v.id;
-        opt.textContent = `${v.reference}（${v.language}）— ${v.japanese.slice(0, 22)}...`;
-        frag.appendChild(opt);
-      });
-      select.appendChild(frag);
-
-      const stillExists = filtered.some(v => v.id === currentVerseId);
-      if (!stillExists) {
-        currentVerseId = filtered[0].id;
-        currentWordIndex = 0;
-      }
-      select.value = currentVerseId;
-    }
-
     function renderCurrentVerse() {
       const verse = getVerseById(currentVerseId);
       if (!verse) return;
@@ -2311,6 +2188,8 @@
       document.getElementById("verseLangBadge").textContent =
         isHebrew ? "旧約・聖書ヘブライ語" : "新約・コイネー・ギリシア語";
       document.getElementById("verseTitle").textContent = verse.reference;
+      document.getElementById("verseCommentaryLabel").textContent = verse.isFullBible ? "出典・注記：" : "原典釈義ポイント：";
+      syncFullNav();
       document.getElementById("verseDirectionHint").textContent =
         isHebrew ? "原文語順: 右から左 (RTL) ⟵" : "原文語順: 左から右 (LTR) ⟶";
 
@@ -2606,9 +2485,7 @@
           openBtn.addEventListener("click", () => {
             currentVerseId = entry.linkedVerseId;
             currentWordIndex = entry.linkedWordIndex || 0;
-            document.getElementById("testamentSelect").value = "ALL";
             document.getElementById("quickFilterInput").value = "";
-            populateVerseSelect();
             switchTab("reader");
             renderCurrentVerse();
           });
@@ -2738,7 +2615,6 @@
             currentVerseId = item.linkedVerseId;
             currentWordIndex = item.linkedWordIndex || 0;
           }
-          populateVerseSelect();
           switchTab("reader");
           renderCurrentVerse();
         });
@@ -2803,6 +2679,7 @@
       return out;
     }
 
+    // 検索欄の下に出る結果一覧（聖書全巻から。クリックでその節を開き、該当する原語を選択）
     function renderReaderSearchDrawer() {
       const drawer = document.getElementById("readerSearchDrawer");
       const countText = document.getElementById("readerSearchCountText");
@@ -2815,16 +2692,25 @@
         listEl.innerHTML = "";
         return;
       }
-
-      const filtered = getFilteredVerses();
       drawer.classList.remove("hidden");
-      countText.textContent = `「${query}」の検索結果: ${filtered.length}節ヒット`;
+      if (!searchDataReady()) {
+        countText.textContent = "検索データを読み込み中…";
+        listEl.innerHTML = "";
+        ensureSearchData().then(() => renderReaderSearchDrawer(), () => {
+          countText.textContent = "検索データ（bible/search.js）を読み込めませんでした";
+        });
+        return;
+      }
+
+      const { hits } = searchWholeBible(query, { scope: "JP_AND_GLOSS", filter: "ALL" });
+      countText.textContent = `「${query}」の検索結果: 聖書全巻で ${hits.length.toLocaleString()} 節`;
       listEl.innerHTML = "";
 
+      const curPos = currentFullPos();
       const maxShow = 24;
       const frag = document.createDocumentFragment();
-      filtered.slice(0, maxShow).forEach(v => {
-        const isCurrent = v.id === currentVerseId;
+      hits.slice(0, maxShow).forEach(h => {
+        const isCurrent = curPos && curPos.code === h.code && curPos.c === h.c && curPos.v === h.v;
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = `px-2.5 py-1 rounded-md text-xs font-medium border transition text-left ${
@@ -2832,36 +2718,19 @@
             ? "bg-amber-600 text-white border-amber-600 shadow-sm"
             : "bg-white hover:bg-amber-100 text-stone-800 border-amber-300"
         }`;
-        btn.textContent = v.reference;
-        btn.title = v.japanese;
+        btn.textContent = searchHitLabel(h);
+        btn.title = h.text;
         btn.addEventListener("click", () => {
-          currentVerseId = v.id;
-          const fullV = getVerseById(v.id);
-          const qLow = query.toLowerCase();
-          if (fullV) {
-            const mIdx = fullV.words.findIndex(w =>
-              w.gloss.toLowerCase().includes(qLow) ||
-              w.definition.toLowerCase().includes(qLow) ||
-              w.surface.toLowerCase().includes(qLow) ||
-              w.lemma.toLowerCase().includes(qLow) ||
-              w.strong.toLowerCase().includes(qLow)
-            );
-            currentWordIndex = mIdx >= 0 ? mIdx : 0;
-          } else {
-            currentWordIndex = 0;
-          }
-          document.getElementById("verseSelect").value = currentVerseId;
-          renderCurrentVerse();
-          renderReaderSearchDrawer();
+          openFullVerse(h.code, h.c, h.v, h.keys).then(() => renderReaderSearchDrawer());
         });
         frag.appendChild(btn);
       });
 
-      if (filtered.length > maxShow) {
+      if (hits.length > maxShow) {
         const moreBtn = document.createElement("button");
         moreBtn.type = "button";
         moreBtn.className = "px-2.5 py-1 rounded-md text-xs font-bold bg-stone-800 text-amber-200 hover:bg-stone-700 transition";
-        moreBtn.textContent = `＋ 他 ${filtered.length - maxShow} 節をすべて一覧表示...`;
+        moreBtn.textContent = `＋ 他 ${(hits.length - maxShow).toLocaleString()} 節をすべて一覧表示...`;
         moreBtn.addEventListener("click", () => {
           document.getElementById("jpSearchInput").value = query;
           switchTab("jpsearch");
@@ -2871,6 +2740,9 @@
 
       listEl.appendChild(frag);
     }
+
+    let _jpSearchLimit = 100;
+    let _jpSearchLastKey = "";
 
     function renderJpSearchView() {
       const inputEl = document.getElementById("jpSearchInput");
@@ -2885,116 +2757,63 @@
 
       const rawQuery = inputEl.value.trim();
       clearBtn.classList.toggle("hidden", !rawQuery);
-      const terms = rawQuery.toLowerCase().split(/[\s　]+/).filter(Boolean);
       const scope = scopeEl ? scopeEl.value : "JP_AND_GLOSS";
-      const bookFilter = bookEl ? bookEl.value : "ALL";
+      const filter = bookEl ? bookEl.value : "ALL";
 
-      // Filter verses
-      const matchedVerses = [];
-      const reverseWordsMap = new Map(); // strong -> { strong, lemma, translit, gloss, lang, count, verseId, wordIdx }
-
-      VERSES_META.forEach(v => {
-        if (bookFilter === "OT" && v.testament !== "OT") return;
-        if (bookFilter === "NT" && v.testament !== "NT") return;
-        if (bookFilter === "LUKE" && !v.id.startsWith("luk-")) return;
-        if (bookFilter === "PSALMS" && !v.id.startsWith("ps-")) return;
-        if (bookFilter === "PROV" && !v.id.startsWith("prov-")) return;
-        if (bookFilter === "PHIL" && !v.id.startsWith("phil-")) return;
-
-        if (!terms.length) {
-          matchedVerses.push({ meta: v, matchedWordIndices: [] });
-          return;
-        }
-
-        const jpLow = v.japanese.toLowerCase();
-        const refLow = v.reference.toLowerCase();
-        const commLow = v.commentary.toLowerCase();
-
-        // Check if all terms match according to scope
-        const allTermsMatch = terms.every(t => {
-          if (jpLow.includes(t) || refLow.includes(t)) return true;
-          if (scope === "JP_ONLY") return false;
-          const inGloss = v.rawWords.some(w =>
-            w[6].toLowerCase().includes(t) ||
-            w[0].toLowerCase().includes(t) ||
-            w[2].toLowerCase().includes(t) ||
-            w[4].toLowerCase().includes(t)
-          );
-          if (inGloss) return true;
-          if (scope === "ALL_FIELDS") {
-            return commLow.includes(t) || v.rawWords.some(w => w[7].toLowerCase().includes(t));
-          }
-          return false;
+      if (!searchDataReady()) {
+        badgeEl.textContent = "検索データを読み込み中…";
+        revBox.classList.add("hidden");
+        listEl.innerHTML = "";
+        ensureSearchData().then(() => renderJpSearchView(), () => {
+          badgeEl.textContent = "検索データ（bible/search.js）を読み込めませんでした";
         });
+        return;
+      }
+      fillJpSearchBookFilter();
 
-        if (!allTermsMatch) return;
+      const searchKey = `${rawQuery}\u0000${scope}\u0000${filter}`;
+      if (searchKey !== _jpSearchLastKey) {
+        _jpSearchLastKey = searchKey;
+        _jpSearchLimit = 100;
+      }
 
-        const matchedIdxs = [];
-        v.rawWords.forEach((w, idx) => {
-          const wMatch = terms.some(t =>
-            w[6].toLowerCase().includes(t) ||
-            w[7].toLowerCase().includes(t) ||
-            w[0].toLowerCase().includes(t) ||
-            w[2].toLowerCase().includes(t) ||
-            w[4].toLowerCase().includes(t)
-          );
-          if (wMatch) {
-            matchedIdxs.push(idx);
-            const st = w[4];
-            if (!reverseWordsMap.has(st)) {
-              reverseWordsMap.set(st, {
-                strong: st,
-                surface: w[0],
-                lemma: w[2],
-                lemmaTranslit: w[3],
-                gloss: w[6],
-                lang: v.testament === "OT" ? "Hebrew" : "Greek",
-                count: 1,
-                verseId: v.id,
-                wordIdx: idx
-              });
-            } else {
-              reverseWordsMap.get(st).count++;
-            }
-          }
-        });
+      if (!rawQuery) {
+        badgeEl.textContent = `聖書全巻 ${LD_BIBLE.searchCount.toLocaleString()} 節が対象`;
+        revBox.classList.add("hidden");
+        listEl.innerHTML = `
+          <div class="bg-white rounded-xl border border-stone-200 p-8 text-center space-y-2">
+            <div class="text-sm font-bold text-stone-700">上の検索欄に言葉を入れると、聖書全巻から探します</div>
+            <p class="text-xs text-stone-500">口語訳の本文・各単語の日本語の意味・原語（ἀγάπη, שָׁלוֹם など）・Strong番号（H7965, G26 など）で検索できます。スペースで区切ると、すべての語を含む節だけを表示します。</p>
+          </div>
+        `;
+        return;
+      }
 
-        matchedVerses.push({ meta: v, matchedWordIndices: matchedIdxs });
-      });
+      const { hits, keyCounts } = searchWholeBible(rawQuery, { scope, filter });
+      badgeEl.textContent = `「${rawQuery}」: ${hits.length.toLocaleString()}節ヒット`;
 
-      badgeEl.textContent = terms.length
-        ? `「${rawQuery}」: ${matchedVerses.length}節ヒット`
-        : `全 ${matchedVerses.length} 節`;
-
-      // Render Reverse Concordance Summary if terms exist and reverseWordsMap has items
-      if (terms.length && reverseWordsMap.size > 0) {
+      // 逆引き: 見つかった節で使われている、該当する原語
+      if (keyCounts.size > 0) {
         revBox.classList.remove("hidden");
         revChips.innerHTML = "";
-        const sortedRev = Array.from(reverseWordsMap.values()).sort((a, b) => b.count - a.count).slice(0, 18);
-        sortedRev.forEach(item => {
+        Array.from(keyCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 18).forEach(([key, count]) => {
+          const e = LD_BIBLE.lexicon[key];
+          if (!e) return;
+          const isHeb = key[0] === "H";
           const chip = document.createElement("button");
           chip.type = "button";
-          const isHeb = item.lang === "Hebrew";
           chip.className = "px-3 py-1.5 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 text-left transition flex items-center gap-2 shadow-sm";
           chip.innerHTML = `
-            <span class="text-base font-bold text-stone-900 ${isHeb ? 'hebrew-text' : 'greek-text'}">${escapeHtml(item.lemma)}</span>
-            <span class="text-xs font-mono text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-semibold">${escapeHtml(item.strong)}</span>
-            <span class="text-xs text-stone-700 font-medium">${ highlightJapaneseText(item.gloss, rawQuery) }</span>
-            <span class="text-[11px] text-stone-400">(${item.count}箇所)</span>
+            <span class="text-base font-bold text-stone-900 ${isHeb ? 'hebrew-text' : 'greek-text'}">${escapeHtml(e[0])}</span>
+            <span class="text-xs font-mono text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-semibold">${escapeHtml(key)}</span>
+            <span class="text-xs text-stone-700 font-medium">${highlightJapaneseText(e[4] || e[2], rawQuery)}</span>
+            <span class="text-[11px] text-stone-400">(${count.toLocaleString()}節)</span>
           `;
+          chip.title = "この語だけで検索し直す";
           chip.addEventListener("click", () => {
-            speakBiblicalText({
-              originalText: item.lemma,
-              translitText: item.lemmaTranslit,
-              lang: item.lang
-            });
-            currentVerseId = item.verseId;
-            currentWordIndex = item.wordIdx;
-            document.getElementById("quickFilterInput").value = rawQuery;
-            populateVerseSelect();
-            switchTab("reader");
-            renderCurrentVerse();
-            renderReaderSearchDrawer();
+            speakBiblicalText({ originalText: e[0], translitText: e[1], lang: isHeb ? "Hebrew" : "Greek" });
+            inputEl.value = key;
+            renderJpSearchView();
           });
           revChips.appendChild(chip);
         });
@@ -3002,22 +2821,28 @@
         revBox.classList.add("hidden");
       }
 
-      // Render Verse Cards (up to 80 for instant DOM rendering)
       listEl.innerHTML = "";
-      if (matchedVerses.length === 0) {
+      if (hits.length === 0) {
         listEl.innerHTML = `
           <div class="bg-white rounded-xl border border-stone-200 p-8 text-center space-y-2">
             <div class="text-sm font-bold text-stone-700">「${escapeHtml(rawQuery)}」に一致する聖句が見つかりませんでした</div>
-            <p class="text-xs text-stone-500">検索対象を「日本語訳＋単語直訳＋釈義ポイントすべて」に広げるか、別の日本語キーワードでお試しください。</p>
+            <p class="text-xs text-stone-500">口語訳は「ゆるす」「あわれみ」のようにかなで書く語も多いので、かなでもお試しください。検索対象を広げたり、書巻の絞り込みを「すべて」に戻したりすることもできます。</p>
           </div>
         `;
         return;
       }
 
-      const maxCards = terms.length ? 100 : 30;
+      const openHit = (h, focusKeys) => {
+        document.getElementById("quickFilterInput").value = rawQuery;
+        document.getElementById("clearQuickFilterBtn").classList.toggle("hidden", !rawQuery);
+        switchTab("reader");
+        openFullVerse(h.code, h.c, h.v, focusKeys).then(() => renderReaderSearchDrawer());
+      };
+
       const frag = document.createDocumentFragment();
-      matchedVerses.slice(0, maxCards).forEach(({ meta, matchedWordIndices }) => {
-        const isHeb = meta.testament === "OT";
+      hits.slice(0, _jpSearchLimit).forEach(h => {
+        const meta = bibleBookMeta(h.code);
+        const isHeb = meta.t === "OT";
         const card = document.createElement("div");
         card.className = "bg-white rounded-xl border border-stone-200 p-4 shadow-sm hover:border-amber-400 transition space-y-2.5";
 
@@ -3027,83 +2852,57 @@
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded text-xs font-semibold ${
               isHeb ? "bg-amber-100 text-amber-900" : "bg-sky-100 text-sky-900"
-            }">${meta.language}</span>
-            <h3 class="text-base font-bold text-stone-900">${highlightJapaneseText(meta.reference, rawQuery)}</h3>
+            }">${isHeb ? "ヘブライ語" : "ギリシア語"}</span>
+            <h3 class="text-base font-bold text-stone-900">${escapeHtml(searchHitLabel(h))}</h3>
           </div>
         `;
-
         const openBtn = document.createElement("button");
         openBtn.type = "button";
         openBtn.className = "px-3 py-1 rounded-md bg-stone-900 hover:bg-amber-600 text-white text-xs font-medium transition";
         openBtn.textContent = "この節を行間リーダーで開く →";
-        openBtn.addEventListener("click", () => {
-          currentVerseId = meta.id;
-          currentWordIndex = matchedWordIndices.length ? matchedWordIndices[0] : 0;
-          document.getElementById("quickFilterInput").value = rawQuery;
-          document.getElementById("clearQuickFilterBtn").classList.toggle("hidden", !rawQuery);
-          populateVerseSelect();
-          switchTab("reader");
-          renderCurrentVerse();
-          renderReaderSearchDrawer();
-        });
+        openBtn.addEventListener("click", () => openHit(h, h.keys));
         headerRow.appendChild(openBtn);
 
         const jpP = document.createElement("p");
         jpP.className = "serif-jp text-sm sm:text-base text-stone-800 leading-relaxed font-medium";
-        jpP.innerHTML = highlightJapaneseText(meta.japanese, rawQuery);
-
-        const origDiv = document.createElement("div");
-        origDiv.className = `text-sm text-stone-600 bg-stone-100 px-3 py-1.5 rounded ${
-          isHeb ? "hebrew-text text-right" : "greek-text text-left"
-        }`;
-        origDiv.textContent = meta.originalFull;
+        jpP.innerHTML = highlightJapaneseText(h.text || "（口語訳ではこの節は前後の節に含まれています）", rawQuery);
 
         card.appendChild(headerRow);
         card.appendChild(jpP);
-        card.appendChild(origDiv);
 
-        // Show matching interlinear words (or all words in verse if matched in Japanese sentence)
-        const wordRow = document.createElement("div");
-        wordRow.className = "flex flex-wrap gap-1.5 pt-1";
-        const indicesToShow = matchedWordIndices.length
-          ? matchedWordIndices
-          : meta.rawWords.map((_, i) => i);
-
-        indicesToShow.forEach(wIdx => {
-          const w = meta.rawWords[wIdx];
-          if (!w) return;
-          const isDirectHit = matchedWordIndices.includes(wIdx);
-          const wBtn = document.createElement("button");
-          wBtn.type = "button";
-          wBtn.className = `px-2.5 py-1 rounded border text-xs transition flex items-center gap-1.5 ${
-            isDirectHit
-              ? "bg-amber-50 border-amber-400 text-stone-900 font-semibold"
-              : "bg-stone-50 border-stone-200 text-stone-700 hover:bg-amber-50"
-          }`;
-          wBtn.innerHTML = `
-            <span class="${isHeb ? 'hebrew-text' : 'greek-text'} font-bold">${escapeHtml(w[0])}</span>
-            <span class="text-[10px] font-mono text-amber-800">${escapeHtml(w[4])}</span>
-            <span>${highlightJapaneseText(w[6], rawQuery)}</span>
-          `;
-          wBtn.addEventListener("click", () => {
-            currentVerseId = meta.id;
-            currentWordIndex = wIdx;
-            populateVerseSelect();
-            switchTab("reader");
-            renderCurrentVerse();
+        // 該当した原語（辞書の見出し語・Strong番号・日本語の意味）
+        if (h.keys.length) {
+          const wordRow = document.createElement("div");
+          wordRow.className = "flex flex-wrap gap-1.5 pt-1";
+          h.keys.forEach(key => {
+            const e = LD_BIBLE.lexicon[key];
+            if (!e) return;
+            const wBtn = document.createElement("button");
+            wBtn.type = "button";
+            wBtn.className = "px-2.5 py-1 rounded border text-xs transition flex items-center gap-1.5 bg-amber-50 border-amber-400 text-stone-900 font-semibold hover:bg-amber-100";
+            wBtn.innerHTML = `
+              <span class="${isHeb ? 'hebrew-text' : 'greek-text'} font-bold">${escapeHtml(e[0])}</span>
+              <span class="text-[10px] font-mono text-amber-800">${escapeHtml(key)}</span>
+              <span>${highlightJapaneseText(e[4] || e[2], rawQuery)}</span>
+            `;
+            wBtn.addEventListener("click", () => openHit(h, [key]));
+            wordRow.appendChild(wBtn);
           });
-          wordRow.appendChild(wBtn);
-        });
-
-        card.appendChild(wordRow);
+          card.appendChild(wordRow);
+        }
         frag.appendChild(card);
       });
 
-      if (!terms.length && matchedVerses.length > maxCards) {
-        const hint = document.createElement("div");
-        hint.className = "text-center text-xs text-stone-500 py-3";
-        hint.textContent = `上の検索ボックスに日本語（例: 幸い、赦し、平和、愛、祈り）を入力すると、全 ${matchedVerses.length} 節から瞬時に検索・逆引きします。`;
-        frag.appendChild(hint);
+      if (hits.length > _jpSearchLimit) {
+        const moreBtn = document.createElement("button");
+        moreBtn.type = "button";
+        moreBtn.className = "w-full py-2.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-200 text-sm font-semibold transition";
+        moreBtn.textContent = `さらに表示（残り ${(hits.length - _jpSearchLimit).toLocaleString()} 節）`;
+        moreBtn.addEventListener("click", () => {
+          _jpSearchLimit += 100;
+          renderJpSearchView();
+        });
+        frag.appendChild(moreBtn);
       }
 
       listEl.appendChild(frag);
@@ -3139,11 +2938,783 @@
     }
 
     // Event Wiring (Runs immediately if DOM is already parsed, or on DOMContentLoaded)
+    // ===== 聖書全巻データ（bible フォルダの books.js / lexicon.js / 各書.js を必要なときに読み込む） =====
+    const LD_BIBLE = window.LD_BIBLE = {
+      index: null,
+      books: new Map(),
+      lexicon: null,
+      waiters: new Map(),
+      receiveIndex(data) { this.index = data; this._done("index"); },
+      receiveLexicon(data) { this.lexicon = data; this._done("lexicon"); },
+      receiveSearch(data) { receiveSearchRows(data); this._done("search"); },
+      receiveBook(code, rows) {
+        const pos = new Map(rows.map((r, i) => [`${r[0]}:${r[1]}`, i]));
+        this.books.set(code, { rows, pos });
+        this._done("book:" + code);
+      },
+      _done(key) {
+        const resolve = this.waiters.get(key);
+        if (resolve) { this.waiters.delete(key); resolve(); }
+      }
+    };
+    const _bibleLoads = new Map();
+    const FULL_POS_KEY = "logos_dabar_full_pos";
+
+    function loadBibleScript(key, src) {
+      if (_bibleLoads.has(key)) return _bibleLoads.get(key);
+      const p = new Promise((resolve, reject) => {
+        LD_BIBLE.waiters.set(key, resolve);
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onerror = () => {
+          _bibleLoads.delete(key);
+          LD_BIBLE.waiters.delete(key);
+          s.remove();
+          reject(new Error(src));
+        };
+        document.head.appendChild(s);
+      });
+      _bibleLoads.set(key, p);
+      return p;
+    }
+
+    function setFullStatus(text) {
+      const el = document.getElementById("fullBibleStatus");
+      if (el) el.textContent = text;
+    }
+
+    function ensureBibleBook(code) {
+      const ready = LD_BIBLE.books.has(code) && LD_BIBLE.lexicon;
+      if (!ready) setFullStatus("読み込み中…");
+      return Promise.all([
+        loadBibleScript("lexicon", "bible/lexicon.js"),
+        loadBibleScript("book:" + code, `bible/${code}.js`)
+      ]).then(() => setFullStatus(""), (err) => {
+        setFullStatus("聖書データを読み込めませんでした（bible フォルダがアプリと同じ場所にあるか確認してください）");
+        throw err;
+      });
+    }
+
+    function bibleBookMeta(code) {
+      return LD_BIBLE.index ? LD_BIBLE.index.find(b => b.code === code) : null;
+    }
+
+    function parseFullId(id) {
+      const [, code, c, v] = id.split(":");
+      return { code, c: parseInt(c, 10), v: parseInt(v, 10) };
+    }
+
+    function fullRefLabel(meta, c, v) {
+      return `${meta.name} ${c}:${v === 0 ? "表題" : v}`;
+    }
+
+    // 解説付き収録節の ID（詩編49篇だけはヘブライ語の節番号で収録）
+    function curatedIdFor(code, c, v) {
+      const id = code === "ps" && c === 49 ? `ps-49-${v + 1}` : `${code}-${c}-${v}`;
+      return RAW_VERSE_MAP.has(id) ? id : null;
+    }
+
+    function fullPosFromCurated(id) {
+      const m = /^([a-z0-9]+)-(\d+)-(\d+)$/.exec(id || "");
+      if (!m || !bibleBookMeta(m[1])) return null;
+      const c = parseInt(m[2], 10);
+      let v = parseInt(m[3], 10);
+      if (m[1] === "ps" && c === 49) v -= 1;
+      return { code: m[1], c, v };
+    }
+
+    // ===== 聖書全巻検索（bible/search.js: 口語訳と各節の Strong 番号） =====
+    function ensureSearchData() {
+      return Promise.all([
+        loadBibleScript("index", "bible/books.js"),
+        loadBibleScript("lexicon", "bible/lexicon.js"),
+        loadBibleScript("search", "bible/search.js")
+      ]);
+    }
+
+    function searchDataReady() {
+      return !!(LD_BIBLE.search && LD_BIBLE.lexicon && LD_BIBLE.index);
+    }
+
+    // 原語の比較用: 母音記号・アクセントを外し、小文字にそろえる
+    function foldOriginal(s) {
+      return String(s || "").normalize("NFD")
+        .replace(/[̀-֑ͯ-ׇ]/g, "")
+        .replace(/ς/g, "σ")
+        .toLowerCase();
+    }
+
+    let _lexSearchRows = null;
+    const _lexTermCache = new Map();
+    // 1語に当たる辞書項目（日本語の意味・原語・音訳、ALL_FIELDS では英語も）
+    function lexKeysForTerm(term, withEnglish) {
+      const cacheKey = (withEnglish ? "E\u0000" : "J\u0000") + term;
+      if (_lexTermCache.has(cacheKey)) return _lexTermCache.get(cacheKey);
+      if (!_lexSearchRows) {
+        _lexSearchRows = Object.entries(LD_BIBLE.lexicon).map(([k, e]) => [
+          k, e[4] || "", foldOriginal(e[0]), (e[1] || "").toLowerCase(), `${e[2]} ${e[3]}`.toLowerCase()
+        ]);
+      }
+      const keys = new Set();
+      const folded = foldOriginal(term);
+      const latin = /^[a-z][a-z'\- ]*$/.test(folded);
+      const original = /[Ͱ-Ͽἀ-῿֐-׿]/.test(term);
+      _lexSearchRows.forEach(([k, ja, lemma, translit, eng]) => {
+        if (ja.includes(term)
+          || (original && lemma.includes(folded))
+          || (latin && folded.length >= 3 && translit.includes(folded))
+          || (withEnglish && latin && folded.length >= 3 && eng.includes(folded))) {
+          keys.add(k);
+        }
+      });
+      _lexTermCache.set(cacheKey, keys);
+      return keys;
+    }
+
+    // "H7965" "g26" "G0026A" → 一致する辞書項目
+    function strongKeysForTerm(term) {
+      const m = /^([hg])0*(\d{1,5})([a-z]?)$/i.exec(term);
+      if (!m) return null;
+      const base = m[1].toUpperCase() + m[2].padStart(4, "0");
+      const suffix = m[3].toUpperCase();
+      const keys = new Set();
+      Object.keys(LD_BIBLE.lexicon).forEach(k => {
+        if (suffix ? k === base + suffix : (k === base || (k.startsWith(base) && /^[A-Za-z]$/.test(k.slice(base.length))))) {
+          keys.add(k);
+        }
+      });
+      return keys;
+    }
+
+    function receiveSearchRows(data) {
+      LD_BIBLE.search = data.map(([code, rows]) => ({
+        code,
+        rows: rows.map(r => ({ c: r[0], v: r[1], text: r[2], keys: r[3] ? r[3].split(" ") : [] }))
+      }));
+      LD_BIBLE.searchCount = LD_BIBLE.search.reduce((n, b) => n + b.rows.length, 0);
+    }
+
+    // scope: JP_ONLY（口語訳のみ）/ JP_AND_GLOSS（＋日本語の意味・原語・Strong番号）/ ALL_FIELDS（＋英語の辞書・収録解説）
+    // filter: ALL / OT / NT / CURATED / 書コード
+    function searchWholeBible(rawQuery, { scope = "JP_AND_GLOSS", filter = "ALL" } = {}) {
+      const terms = rawQuery.trim().split(/[\s　]+/).filter(Boolean);
+      const hits = [];
+      const keyCounts = new Map();
+      if (!terms.length || !searchDataReady()) return { hits, keyCounts };
+      const matchers = terms.map(t => {
+        const strongKeys = strongKeysForTerm(t);
+        return {
+          text: strongKeys ? null : t.toLowerCase(),
+          keys: strongKeys || (scope === "JP_ONLY" ? new Set() : lexKeysForTerm(t, scope === "ALL_FIELDS")),
+          raw: t.toLowerCase()
+        };
+      });
+      LD_BIBLE.search.forEach(book => {
+        const meta = bibleBookMeta(book.code);
+        if (filter === "OT" || filter === "NT") {
+          if (meta.t !== filter) return;
+        } else if (filter !== "ALL" && filter !== "CURATED" && filter !== book.code) {
+          return;
+        }
+        book.rows.forEach(r => {
+          const curatedId = (filter === "CURATED" || scope === "ALL_FIELDS") ? curatedIdFor(book.code, r.c, r.v) : null;
+          if (filter === "CURATED" && !curatedId) return;
+          const textLow = r.text.toLowerCase();
+          const matched = [];
+          for (const m of matchers) {
+            let ok = m.text !== null && textLow.includes(m.text);
+            if (m.keys.size) {
+              r.keys.forEach(k => {
+                if (m.keys.has(k)) { ok = true; if (!matched.includes(k)) matched.push(k); }
+              });
+            }
+            if (!ok && curatedId && scope === "ALL_FIELDS") {
+              const cv = RAW_VERSE_MAP.get(curatedId);
+              ok = !!cv && String(cv[5]).toLowerCase().includes(m.raw);
+            }
+            if (!ok) return;
+          }
+          hits.push({ code: book.code, c: r.c, v: r.v, text: r.text, keys: matched, curated: !!curatedIdFor(book.code, r.c, r.v) });
+          matched.forEach(k => keyCounts.set(k, (keyCounts.get(k) || 0) + 1));
+        });
+      });
+      return { hits, keyCounts };
+    }
+
+    function searchHitLabel(h) {
+      const meta = bibleBookMeta(h.code);
+      return `${h.curated ? "★ " : ""}${fullRefLabel(meta, h.c, h.v)}`;
+    }
+
+    // 全文一覧検索の「書巻・区分で絞り込み」に各書を加える
+    function fillJpSearchBookFilter() {
+      const sel = document.getElementById("jpSearchBookFilter");
+      if (!sel || sel.dataset.filled || !LD_BIBLE.index) return;
+      sel.dataset.filled = "1";
+      [["OT", "旧約聖書の書"], ["NT", "新約聖書の書"]].forEach(([t, label]) => {
+        const group = document.createElement("optgroup");
+        group.label = label;
+        LD_BIBLE.index.filter(b => b.t === t).forEach(b => {
+          const opt = document.createElement("option");
+          opt.value = b.code;
+          opt.textContent = b.name;
+          group.appendChild(opt);
+        });
+        sel.appendChild(group);
+      });
+    }
+
+    // いま表示している節の位置（収録節も全巻の位置に直す）
+    function currentFullPos() {
+      if (currentVerseId.startsWith("full:")) return parseFullId(currentVerseId);
+      return fullPosFromCurated(currentVerseId);
+    }
+
+    // ===== 解説つきの節（★） =====
+    const CURATED_ONLY_KEY = "logos_dabar_curated_only";
+    let _curatedNav = null;
+    // 書コード → Map(章 → [節…])（全巻での節番号）と、聖書の順に並べた一覧
+    function curatedNav() {
+      if (_curatedNav || !LD_BIBLE.index) return _curatedNav;
+      const order = new Map(LD_BIBLE.index.map((b, i) => [b.code, i]));
+      const list = VERSES_META
+        .map(m => ({ id: m.id, ...fullPosFromCurated(m.id) }))
+        .filter(p => p.code)
+        .sort((a, b) => order.get(a.code) - order.get(b.code) || a.c - b.c || a.v - b.v);
+      const books = new Map();
+      list.forEach(p => {
+        if (!books.has(p.code)) books.set(p.code, new Map());
+        const chs = books.get(p.code);
+        if (!chs.has(p.c)) chs.set(p.c, []);
+        chs.get(p.c).push(p.v);
+      });
+      _curatedNav = { list, books };
+      return _curatedNav;
+    }
+
+    function isCuratedOnly() {
+      const el = document.getElementById("fullCuratedOnly");
+      return !!(el && el.checked);
+    }
+
+    // 音訳を既存のカナ変換・音節分割で扱える形にそろえる
+    function normFullTranslit(t, lang) {
+      if (!t) return "";
+      if (lang === "Hebrew") {
+        return t.replace(/\//g, "").replace(/\./g, "·").toLowerCase()
+          .replace(/ch/g, "ḥ").replace(/tz/g, "ṣ").replace(/·+/g, "·").replace(/^·|·$/g, "");
+      }
+      return t;
+    }
+
+    // ---- 文法コード（STEPBible: ヘブライ語 ETCBC/OSHB 形式、ギリシア語 Robinson 形式）を日本語に ----
+    const HEB_GENDER = { m: "男性", f: "女性", b: "両性", c: "通性" };
+    const HEB_NUMBER = { s: "単数", p: "複数", d: "双数" };
+    const HEB_STATE = { a: "絶対形", c: "連語形", d: "限定形" };
+    const HEB_STEM = {
+      q: "カル", N: "ニファル", p: "ピエル", P: "プアル", h: "ヒフィル", H: "ホフアル", t: "ヒトパエル",
+      o: "ポレル", O: "ポラル", r: "ヒトポレル", m: "ポエル", M: "ポアル", k: "パレル", K: "プラル",
+      Q: "カル受動", l: "ピルペル", L: "ポルパル", f: "ヒトパルペル", D: "ニトパエル", j: "ペアルアル",
+      i: "ピレル", u: "ホトパアル", c: "ティフイル", v: "ヒシュタフェル", w: "ニトパレル", y: "ニトポエル", z: "ヒトポエル"
+    };
+    const ARAM_STEM = {
+      q: "ペアル", Q: "ペイル", u: "ヒトペエル", p: "パエル", P: "イトパアル", M: "ヒトパアル", a: "アフェル",
+      h: "ハフェル", s: "サフェル", e: "シャフェル", H: "ホフアル", i: "イトペエル", t: "ヒシュタフェル",
+      v: "イシュタフェル", w: "ヒトアフェル", o: "ポレル", z: "イトポエル", r: "ヒトポレル", f: "ヒトパルペル",
+      b: "ヘファル", c: "ティフェル", m: "ポエル", l: "パルペル", L: "イトパルペル", O: "イトポレル", G: "イッタファル"
+    };
+    const HEB_CONJ = {
+      p: "完了形", q: "継続完了形", i: "未完了形", u: "未完了形（接続詞付き）", w: "継続未完了形（ワウ継続）", h: "願望形", j: "指示形",
+      v: "命令形", r: "能動分詞", s: "受動分詞", a: "不定詞独立形", c: "不定詞連語形"
+    };
+    const HEB_TYPES = {
+      N: { c: "普通名詞", g: "民族名", t: "称号" },
+      A: { a: "形容詞", c: "基数", g: "民族形容詞", o: "序数" },
+      P: { d: "指示代名詞", f: "不定代名詞", i: "疑問代名詞", p: "人称代名詞", r: "関係代名詞" },
+      S: { d: "方向のヘー", h: "付加のヘー", n: "付加のヌン", p: "代名詞接尾辞" },
+      T: {
+        a: "肯定の不変化詞", d: "定冠詞", e: "勧告の不変化詞", i: "疑問の不変化詞", j: "間投詞", m: "指示の不変化詞",
+        n: "否定詞", o: "目的語標識（エト）", r: "関係詞", c: "接続の不変化詞"
+      }
+    };
+    const HEB_PROPER = { m: "固有名詞（人名・男性）", f: "固有名詞（人名・女性）", l: "固有名詞（地名）", t: "固有名詞（神名・称号）" };
+
+    // 人称・性・数・状態（"3ms" や "fsa"）
+    function hebPGN(rest, withState) {
+      const out = [];
+      let i = 0;
+      if (/\d/.test(rest[0] || "")) { out.push(`${rest[0]}人称`); i = 1; }
+      if (rest[i] && HEB_GENDER[rest[i]]) out.push(HEB_GENDER[rest[i]]);
+      if (rest[i + 1] && HEB_NUMBER[rest[i + 1]]) out.push(HEB_NUMBER[rest[i + 1]]);
+      if (withState && rest[i + 2] && HEB_STATE[rest[i + 2]]) out.push(HEB_STATE[rest[i + 2]]);
+      return out;
+    }
+
+    function decodeHebSegment(seg, aramaic) {
+      const pos = seg[0];
+      const type = seg[1] || "";
+      switch (pos) {
+        case "c": return "継続のワウ";
+        case "C": return "接続詞";
+        case "D": return "副詞";
+        case "R": return type === "d" ? "前置詞（＋定冠詞）" : "前置詞";
+        case "V": {
+          const stems = aramaic ? ARAM_STEM : HEB_STEM;
+          const conj = seg[2] || "";
+          const parts = ["動詞", stems[type] || type, HEB_CONJ[conj] || conj];
+          return parts.concat(hebPGN(seg.slice(3), conj === "r" || conj === "s")).filter(Boolean).join("・");
+        }
+        case "N":
+          if (type === "p") return HEB_PROPER[seg[2]] || "固有名詞";
+          return ["名詞", HEB_TYPES.N[type] || ""].concat(hebPGN(seg.slice(2), true)).filter(Boolean).join("・");
+        case "A":
+          return [HEB_TYPES.A[type] || "形容詞"].concat(hebPGN(seg.slice(2), true)).join("・");
+        case "P":
+        case "S":
+          return [HEB_TYPES[pos][type] || (pos === "P" ? "代名詞" : "接尾辞")].concat(hebPGN(seg.slice(2), false)).join("・");
+        case "T":
+          return HEB_TYPES.T[type] || "不変化詞";
+        default:
+          return seg;
+      }
+    }
+
+    function decodeHebrewMorph(code) {
+      if (!code) return "";
+      const aramaic = code[0] === "A";
+      const label = code.slice(1).split("/").filter(Boolean).map(s => decodeHebSegment(s, aramaic)).join(" ＋ ");
+      return (aramaic ? "アラム語・" : "") + label;
+    }
+
+    const GK_CASE = { N: "主格", G: "属格", D: "与格", A: "対格", V: "呼格" };
+    const GK_NUMBER = { S: "単数", P: "複数" };
+    const GK_GENDER = { M: "男性", F: "女性", N: "中性" };
+    const GK_TENSE = { P: "現在", I: "未完了過去", F: "未来", A: "アオリスト", R: "完了", L: "過去完了" };
+    const GK_VOICE = {
+      A: "能動態", M: "中動態", P: "受動態", E: "中動態/受動態", D: "中動態（異態動詞）",
+      O: "受動態（異態動詞）", N: "中動/受動態（異態動詞）", Q: "非人称能動態", X: "態の区別なし"
+    };
+    const GK_MOOD = { I: "直説法", S: "接続法", O: "希求法", M: "命令法", N: "不定詞", P: "分詞", R: "命令的分詞" };
+    const GK_POS = {
+      N: "名詞", A: "形容詞", T: "冠詞", P: "人称代名詞", R: "関係代名詞", C: "相互代名詞", D: "指示代名詞",
+      K: "相関代名詞", I: "疑問代名詞", X: "不定代名詞", Q: "相関・疑問代名詞", F: "再帰代名詞", S: "所有代名詞"
+    };
+    const GK_WORD = {
+      ADV: "副詞", CONJ: "接続詞", COND: "条件の接続詞", PRT: "不変化詞", PREP: "前置詞", INJ: "間投詞",
+      ARAM: "アラム語（音写）", HEB: "ヘブライ語（音写）"
+    };
+    const GK_FLAG = {
+      I: "疑問", N: "否定", C: "比較級", S: "最上級", P: "固有名詞", L: "地名", T: "称号", G: "民族名",
+      PRI: "固有名詞（不変化）", NUI: "数詞（不変化）", LI: "文字（不変化）", OI: "不変化名詞",
+      ATT: "アッティカ形", K: "καί との縮約形", ABB: "略形", E: "強調形", HEB: "ヘブライ語", ARAM: "アラム語"
+    };
+
+    // "PG"（固有名詞・民族名）のような組み合わせも一文字ずつ読む
+    function gkFlag(p) {
+      if (GK_FLAG[p]) return GK_FLAG[p];
+      if (/^[A-Z]+$/.test(p) && [...p].every(ch => GK_FLAG[ch])) return [...p].map(ch => GK_FLAG[ch]).join("・");
+      return p;
+    }
+
+    // "NSM"（格・数・性）
+    function gkCNG(s) {
+      return [GK_CASE[s[0]], GK_NUMBER[s[1]], GK_GENDER[s[2]]].filter(Boolean);
+    }
+
+    function decodeGreekMorph(code) {
+      if (!code) return "";
+      // 複合語 "PRT-N + G2089=ADV" は部分ごとに読む
+      if (code.includes(" + ")) {
+        return code.split(" + ").map(p => decodeGreekMorph(p.replace(/^G\d+[A-Za-z]?=/, ""))).join(" ＋ ");
+      }
+      const parts = code.split("-");
+      const head = parts[0];
+      const flags = [];
+      let out;
+      if (GK_WORD[head]) {
+        out = [GK_WORD[head]];
+        parts.slice(1).forEach(p => flags.push(gkFlag(p)));
+      } else if (head === "V") {
+        const m = /^(2?)([PIFARL])([A-Z])([A-Z])$/.exec(parts[1] || "");
+        if (!m) return code;
+        out = ["動詞", (m[1] ? "第2" : "") + GK_TENSE[m[2]], GK_VOICE[m[3]] || m[3], GK_MOOD[m[4]] || m[4]];
+        const rest = parts[2] || "";
+        if (/^\d/.test(rest)) out.push(`${rest[0]}人称`, GK_NUMBER[rest[1]]);
+        else if (rest) out = out.concat(gkCNG(rest));
+        parts.slice(3).forEach(p => flags.push(gkFlag(p)));
+      } else if (GK_POS[head]) {
+        out = [GK_POS[head]];
+        const body = parts[1] || "";
+        if (GK_FLAG[body]) {
+          flags.push(GK_FLAG[body]);
+        } else if (head === "S" && /^\d/.test(body)) {
+          // 所有代名詞: 人称・所有者の数・格・数・性
+          out.push(`${body[0]}人称`, `所有者${GK_NUMBER[body[1]] || ""}`, ...gkCNG(body.slice(2)));
+        } else if (/^\d/.test(body)) {
+          out.push(`${body[0]}人称`, ...gkCNG(body.slice(1)));
+        } else {
+          out = out.concat(gkCNG(body));
+        }
+        parts.slice(2).forEach(p => flags.push(gkFlag(p)));
+      } else {
+        return code;
+      }
+      return out.concat(flags).filter(Boolean).join("・");
+    }
+
+    let _curatedByStrong = null;
+    function curatedLexEntry(strong) {
+      if (!_curatedByStrong) _curatedByStrong = new Map(getUnifiedLexicon().map(e => [e.strong, e]));
+      return _curatedByStrong.get(strong);
+    }
+
+    function buildFullWord(w, lang) {
+      const [surface, translit, strongs, morph, gloss] = w;
+      const keys = strongs.match(/[HG]\d+[A-Za-z]?/g) || [];
+      const braced = /\{([HG]\d+[A-Za-z]?)\}/.exec(strongs);
+      const main = braced ? braced[1] : (keys[keys.length - 1] || "");
+      const lex = LD_BIBLE.lexicon[main] || ["", "", "", "", ""];
+      const strong = main.replace(/^([HG])0*(\d+)[A-Za-z]?$/, "$1$2");
+      const curated = curatedLexEntry(strong);
+      const ja = lex[4] || "";
+      const engGloss = gloss.replace(/\/\s*/g, " / ");
+      const defParts = [];
+      if (ja) defParts.push(`意味: ${ja}`);
+      if (curated && curated.definition) defParts.push(`収録解説より: ${curated.definition}`);
+      if (keys.length > 1) {
+        defParts.push("構成: " + keys.map(k => {
+          const e = LD_BIBLE.lexicon[k];
+          return e ? `${e[0]}（${e[4] || e[2]}）` : k;
+        }).join(" ＋ "));
+      }
+      if (lex[2] || lex[3]) defParts.push(`辞書（英語）: ${lex[2]}${lex[3] ? " — " + lex[3] : ""}`);
+      return {
+        surface,
+        surfaceTranslit: normFullTranslit(translit, lang),
+        lemma: lex[0] || surface,
+        lemmaTranslit: normFullTranslit(lex[1], lang),
+        strong,
+        lang,
+        morph: lang === "Hebrew" ? decodeHebrewMorph(morph) : decodeGreekMorph(morph),
+        gloss: ja ? `${ja}（${engGloss.replace("<obj.>", "obj.")}）` : engGloss.replace("<obj.>", "（目的語の標識）"),
+        definition: defParts.join(" ／ ")
+      };
+    }
+
+    function buildFullVerse(id) {
+      const cached = _hydratedVerses.get(id);
+      if (cached) return cached;
+      const { code, c, v } = parseFullId(id);
+      const book = LD_BIBLE.books.get(code);
+      const meta = bibleBookMeta(code);
+      if (!book || !meta || !LD_BIBLE.lexicon) return null;
+      const idx = book.pos.get(`${c}:${v}`);
+      if (idx === undefined) return null;
+      const row = book.rows[idx];
+      const isOT = meta.t === "OT";
+      const lang = isOT ? "Hebrew" : "Greek";
+      const reference = fullRefLabel(meta, c, v);
+      const words = row[3].map(w => ({ ...buildFullWord(w, lang), usages: [reference] }));
+      const originalFull = words.reduce((acc, w) => acc + (acc && !acc.endsWith("־") ? " " : "") + w.surface, "");
+      const notes = [isOT
+        ? "原文: ヘブライ語聖書（レニングラード写本・ケレー読み）"
+        : "原文: ギリシア語新約聖書（ネストレ・アーラント28版本文）"];
+      if (row[4]) notes.push("この節はネストレ・アーラント本文にはないため、公認本文（TR）の語を表示しています。");
+      if (!row[2]) notes.push("口語訳ではこの節は前後の節に含まれています。");
+      if (curatedIdFor(code, c, v)) notes.push("この節には詳しい解説付きの収録データがあります（上の「📝 この節の詳しい解説を見る」）。");
+      notes.push("日本語訳: 口語訳聖書。単語の意味は英語の辞書データ（STEPBible）です。");
+      const verse = {
+        id,
+        isFullBible: true,
+        testament: meta.t,
+        language: isOT ? "ヘブライ語" : "ギリシア語",
+        reference,
+        originalFull,
+        japanese: row[2] || "（口語訳ではこの節は前後の節に含まれています）",
+        commentary: notes.join(" "),
+        words
+      };
+      _hydratedVerses.set(id, verse);
+      return verse;
+    }
+
+    // まだ読み込んでいない書の節が求められたとき（単語帳から開いたときなど）
+    function fullVersePlaceholder(id) {
+      const { code } = parseFullId(id);
+      const meta = bibleBookMeta(code);
+      ensureBibleBook(code).then(() => {
+        if (currentVerseId === id) renderCurrentVerse();
+      }, () => {});
+      return {
+        id,
+        isFullBible: true,
+        testament: meta ? meta.t : "OT",
+        language: meta && meta.t === "NT" ? "ギリシア語" : "ヘブライ語",
+        reference: "読み込み中…",
+        originalFull: "",
+        japanese: "",
+        commentary: "",
+        words: []
+      };
+    }
+
+    function fillSelect(select, items) {
+      select.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      items.forEach(([value, label]) => {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = label;
+        frag.appendChild(opt);
+      });
+      select.appendChild(frag);
+    }
+
+    // 書の選択欄（★: 解説つきの節がある書。「解説つきの節だけ」のときはその書だけ）
+    function fillBookSelect(curatedOnly) {
+      const bookSel = document.getElementById("fullBookSelect");
+      const nav = curatedNav();
+      bookSel.innerHTML = "";
+      [["OT", "旧約聖書（ヘブライ語・アラム語）"], ["NT", "新約聖書（ギリシア語）"]].forEach(([t, label]) => {
+        const books = LD_BIBLE.index.filter(b => b.t === t && (!curatedOnly || (nav && nav.books.has(b.code))));
+        if (!books.length) return;
+        const group = document.createElement("optgroup");
+        group.label = label;
+        books.forEach(b => {
+          const chs = nav && nav.books.get(b.code);
+          const opt = document.createElement("option");
+          opt.value = b.code;
+          if (!chs) {
+            opt.textContent = b.name;
+          } else if (curatedOnly) {
+            let n = 0;
+            chs.forEach(vs => { n += vs.length; });
+            opt.textContent = `${b.name}（★${n}節）`;
+          } else {
+            opt.textContent = `${b.name} ★`;
+          }
+          group.appendChild(opt);
+        });
+        bookSel.appendChild(group);
+      });
+      bookSel.dataset.mode = String(curatedOnly);
+    }
+
+    let _fullNavShown = "";
+    // 書・章・節の選択欄を、いま表示している節に合わせる
+    function setFullNav(code, c, v) {
+      const meta = bibleBookMeta(code);
+      if (!meta) return;
+      const curatedOnly = isCuratedOnly();
+      const key = `${curatedOnly}:${code}:${c}:${v}`;
+      if (_fullNavShown === key) return;
+      _fullNavShown = key;
+      const bookSel = document.getElementById("fullBookSelect");
+      const chSel = document.getElementById("fullChapterSelect");
+      const vSel = document.getElementById("fullVerseSelect");
+      if (bookSel.dataset.mode !== String(curatedOnly)) fillBookSelect(curatedOnly);
+      bookSel.value = code;
+      const nav = curatedNav();
+      const starred = nav && nav.books.get(code);
+      let chapters = meta.chapters;
+      if (curatedOnly && starred) {
+        chapters = meta.chapters.filter(ch => starred.has(ch[0])).map(ch => [ch[0], starred.get(ch[0])]);
+      }
+      const chapter = chapters.find(ch => ch[0] === c) || chapters[0];
+      const chKey = `${curatedOnly}:${code}`;
+      if (chSel.dataset.key !== chKey) {
+        fillSelect(chSel, chapters.map(ch => [ch[0], `${ch[0]}章${!curatedOnly && starred && starred.has(ch[0]) ? " ★" : ""}`]));
+        chSel.dataset.key = chKey;
+      }
+      chSel.value = chapter[0];
+      const vKey = `${curatedOnly}:${code}:${chapter[0]}`;
+      if (vSel.dataset.key !== vKey) {
+        const marks = (starred && starred.get(chapter[0])) || [];
+        fillSelect(vSel, chapter[1].map(n => [n, `${n === 0 ? "表題" : `${n}節`}${!curatedOnly && marks.includes(n) ? " ★" : ""}`]));
+        vSel.dataset.key = vKey;
+      }
+      vSel.value = chapter[1].includes(v) ? v : chapter[1][0];
+    }
+
+    function syncFullNav() {
+      if (!LD_BIBLE.index) return;
+      const btn = document.getElementById("fullOpenCuratedBtn");
+      let pos = null;
+      if (currentVerseId.startsWith("full:")) {
+        pos = parseFullId(currentVerseId);
+        btn.classList.toggle("hidden", !curatedIdFor(pos.code, pos.c, pos.v));
+      } else {
+        pos = fullPosFromCurated(currentVerseId);
+        btn.classList.add("hidden");
+      }
+      if (pos) setFullNav(pos.code, pos.c, pos.v);
+    }
+
+    function saveFullPos(code, c, v) {
+      try { localStorage.setItem(FULL_POS_KEY, JSON.stringify({ code, c, v })); } catch (e) {}
+    }
+
+    // focusKeys: 開いたときに選択する語の Strong 番号（検索から開いたとき）
+    function openFullVerse(code, c, v, focusKeys) {
+      return ensureBibleBook(code).then(() => {
+        const book = LD_BIBLE.books.get(code);
+        if (!book.pos.has(`${c}:${v}`)) {
+          const first = book.rows.find(r => r[0] === c) || book.rows[0];
+          c = first[0];
+          v = first[1];
+        }
+        if (isCuratedOnly() && !curatedIdFor(code, c, v)) setCuratedOnly(false);
+        currentVerseId = `full:${code}:${c}:${v}`;
+        currentWordIndex = 0;
+        if (focusKeys && focusKeys.length) {
+          const row = book.rows[book.pos.get(`${c}:${v}`)];
+          const idx = row[3].findIndex(w => (w[2].match(/[HG]\d+[A-Za-z]?/g) || []).some(k => focusKeys.includes(k)));
+          if (idx >= 0) currentWordIndex = idx;
+        }
+        renderCurrentVerse();
+        saveFullPos(code, c, v);
+      }).catch(() => {});
+    }
+
+    // 解説つきの収録節を開く
+    function openCuratedVerse(id) {
+      currentVerseId = id;
+      currentWordIndex = 0;
+      renderCurrentVerse();
+      const pos = fullPosFromCurated(id);
+      if (pos) saveFullPos(pos.code, pos.c, pos.v);
+      return Promise.resolve();
+    }
+
+    // 選択欄から選んだ節を開く（「解説つきの節だけ」のときは解説つきの収録データで）
+    function goToPosition(code, c, v) {
+      if (isCuratedOnly()) {
+        const cid = curatedIdFor(code, c, v);
+        if (cid) return openCuratedVerse(cid);
+      }
+      return openFullVerse(code, c, v);
+    }
+
+    function setCuratedOnly(on) {
+      const el = document.getElementById("fullCuratedOnly");
+      if (el) el.checked = on;
+      try { localStorage.setItem(CURATED_ONLY_KEY, on ? "1" : "0"); } catch (e) {}
+    }
+
+    // 前の節・次の節（書の最後まで行ったら次の書へ）
+    function stepFullVerse(delta) {
+      const { code, c, v } = parseFullId(currentVerseId);
+      const book = LD_BIBLE.books.get(code);
+      if (!book) return;
+      const idx = book.pos.get(`${c}:${v}`) + delta;
+      if (idx >= 0 && idx < book.rows.length) {
+        return openFullVerse(code, book.rows[idx][0], book.rows[idx][1]);
+      }
+      const order = LD_BIBLE.index.findIndex(b => b.code === code);
+      const next = LD_BIBLE.index[(order + delta + LD_BIBLE.index.length) % LD_BIBLE.index.length];
+      ensureBibleBook(next.code).then(() => {
+        const rows = LD_BIBLE.books.get(next.code).rows;
+        const r = delta > 0 ? rows[0] : rows[rows.length - 1];
+        openFullVerse(next.code, r[0], r[1]);
+      }).catch(() => {});
+    }
+
+    // 「← 前の節」「次の節 →」: 解説つきの節だけのときは★の節を順に、それ以外は全巻を順に
+    function stepVerse(delta) {
+      const pos = currentFullPos();
+      if (!pos || !LD_BIBLE.index) return;
+      if (isCuratedOnly()) {
+        const list = curatedNav().list;
+        const order = new Map(LD_BIBLE.index.map((b, i) => [b.code, i]));
+        const cmp = p => order.get(p.code) - order.get(pos.code) || p.c - pos.c || p.v - pos.v;
+        const next = delta > 0
+          ? (list.find(p => cmp(p) > 0) || list[0])
+          : ([...list].reverse().find(p => cmp(p) < 0) || list[list.length - 1]);
+        return openCuratedVerse(next.id);
+      }
+      if (!currentVerseId.startsWith("full:")) {
+        return ensureBibleBook(pos.code).then(() => {
+          currentVerseId = `full:${pos.code}:${pos.c}:${pos.v}`;
+          stepFullVerse(delta);
+        }).catch(() => {});
+      }
+      return stepFullVerse(delta);
+    }
+
+    function initFullBible() {
+      const bookSel = document.getElementById("fullBookSelect");
+      const chSel = document.getElementById("fullChapterSelect");
+      const vSel = document.getElementById("fullVerseSelect");
+      const curatedToggle = document.getElementById("fullCuratedOnly");
+      try { curatedToggle.checked = localStorage.getItem(CURATED_ONLY_KEY) === "1"; } catch (e) {}
+      setFullStatus("読み込み中…");
+      loadBibleScript("index", "bible/books.js").then(() => {
+        setFullStatus("");
+        fillBookSelect(isCuratedOnly());
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem(FULL_POS_KEY) || "null"); } catch (e) {}
+        if (saved && bibleBookMeta(saved.code) && !currentVerseId.startsWith("full:")) {
+          const cid = curatedIdFor(saved.code, saved.c, saved.v);
+          if (isCuratedOnly()) {
+            if (cid) openCuratedVerse(cid);
+          } else {
+            openFullVerse(saved.code, saved.c, saved.v);
+          }
+        }
+        syncFullNav();
+      }).catch(() => {
+        setFullStatus("聖書全巻データ（bible フォルダ）が見つかりません");
+      });
+
+      bookSel.addEventListener("change", () => {
+        const meta = bibleBookMeta(bookSel.value);
+        const starred = curatedNav() && curatedNav().books.get(meta.code);
+        if (isCuratedOnly() && starred) {
+          const [c, vs] = starred.entries().next().value;
+          return goToPosition(meta.code, c, vs[0]);
+        }
+        const first = meta.chapters[0];
+        openFullVerse(meta.code, first[0], first[1].includes(1) ? 1 : first[1][0]);
+      });
+      chSel.addEventListener("change", () => {
+        const meta = bibleBookMeta(bookSel.value);
+        const c = parseInt(chSel.value, 10);
+        const starred = curatedNav() && curatedNav().books.get(meta.code);
+        if (isCuratedOnly() && starred && starred.has(c)) {
+          return goToPosition(meta.code, c, starred.get(c)[0]);
+        }
+        const ch = meta.chapters.find(x => x[0] === c);
+        openFullVerse(meta.code, ch[0], ch[1].includes(1) ? 1 : ch[1][0]);
+      });
+      vSel.addEventListener("change", () => {
+        goToPosition(bookSel.value, parseInt(chSel.value, 10), parseInt(vSel.value, 10));
+      });
+      curatedToggle.addEventListener("change", () => {
+        setCuratedOnly(curatedToggle.checked);
+        if (!LD_BIBLE.index) return;
+        const pos = currentFullPos();
+        if (curatedToggle.checked) {
+          const cid = pos && curatedIdFor(pos.code, pos.c, pos.v);
+          if (cid) return openCuratedVerse(cid);
+          const list = curatedNav().list;
+          const target = (pos && list.find(p => p.code === pos.code)) || list[0];
+          return openCuratedVerse(target.id);
+        }
+        _fullNavShown = "";
+        syncFullNav();
+      });
+      document.getElementById("fullOpenCuratedBtn").addEventListener("click", () => {
+        const { code, c, v } = parseFullId(currentVerseId);
+        const cid = curatedIdFor(code, c, v);
+        if (cid) openCuratedVerse(cid);
+      });
+    }
+
     function initLogosDabarApp() {
       if (window._logosDabarInitialized) return;
       window._logosDabarInitialized = true;
       loadSavedState();
-      populateVerseSelect();
       renderCurrentVerse();
 
       // Tabs
@@ -3186,25 +3757,11 @@
       });
 
       // Reader Controls
-      document.getElementById("testamentSelect").addEventListener("change", () => {
-        populateVerseSelect();
-        renderCurrentVerse();
-      });
-
-      document.getElementById("verseSelect").addEventListener("change", (e) => {
-        if (e.target.value) {
-          currentVerseId = e.target.value;
-          currentWordIndex = 0;
-          renderCurrentVerse();
-        }
-      });
-
       const quickInput = document.getElementById("quickFilterInput");
       const clearQuickBtn = document.getElementById("clearQuickFilterBtn");
 
       quickInput.addEventListener("input", () => {
         clearQuickBtn.classList.toggle("hidden", !quickInput.value);
-        populateVerseSelect();
         // Auto-select matching word in verse if query matches
         const q = quickInput.value.trim().toLowerCase();
         const v = getVerseById(currentVerseId);
@@ -3219,13 +3776,14 @@
           if (matchIdx >= 0) currentWordIndex = matchIdx;
         }
         renderCurrentVerse();
-        renderReaderSearchDrawer();
+        // 全巻検索は入力が落ち着いてから
+        clearTimeout(quickInput._searchTimer);
+        quickInput._searchTimer = setTimeout(renderReaderSearchDrawer, 200);
       });
 
       clearQuickBtn.addEventListener("click", () => {
         quickInput.value = "";
         clearQuickBtn.classList.add("hidden");
-        populateVerseSelect();
         renderCurrentVerse();
         renderReaderSearchDrawer();
       });
@@ -3234,27 +3792,8 @@
         document.getElementById(id).addEventListener("change", () => renderCurrentVerse());
       });
 
-      document.getElementById("prevVerseBtn").addEventListener("click", () => {
-        const filtered = getFilteredVerses();
-        if (filtered.length === 0) return;
-        const idx = filtered.findIndex(v => v.id === currentVerseId);
-        const prevIdx = (idx - 1 + filtered.length) % filtered.length;
-        currentVerseId = filtered[prevIdx].id;
-        currentWordIndex = 0;
-        document.getElementById("verseSelect").value = currentVerseId;
-        renderCurrentVerse();
-      });
-
-      document.getElementById("nextVerseBtn").addEventListener("click", () => {
-        const filtered = getFilteredVerses();
-        if (filtered.length === 0) return;
-        const idx = filtered.findIndex(v => v.id === currentVerseId);
-        const nextIdx = (idx + 1) % filtered.length;
-        currentVerseId = filtered[nextIdx].id;
-        currentWordIndex = 0;
-        document.getElementById("verseSelect").value = currentVerseId;
-        renderCurrentVerse();
-      });
+      document.getElementById("prevVerseBtn").addEventListener("click", () => stepVerse(-1));
+      document.getElementById("nextVerseBtn").addEventListener("click", () => stepVerse(1));
 
       // Audio Controls Wiring (Deferred so initial render is instantaneous)
       setTimeout(refreshVoiceCatalog, 60);
@@ -3344,6 +3883,8 @@
         renderCurrentVerse();
         showToast("単語帳をすべて消去しました");
       });
+
+      initFullBible();
     }
     if (document.readyState === "loading") {
       window.addEventListener("DOMContentLoaded", initLogosDabarApp);

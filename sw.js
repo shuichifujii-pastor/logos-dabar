@@ -1,5 +1,5 @@
 // オフラインで動かすための仕組み(Service Worker)。make_pwa.py が pwa/sw.js を作ります。
-const CACHE = 'logos-dabar-7df6babd75e2';
+const CACHE = 'logos-dabar-915f19cfcf89';
 const APP_FILES = [
   './',
   './index.html',
@@ -8,6 +8,9 @@ const APP_FILES = [
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
+  // 聖書全巻の目次と辞書。各書のデータ(bible/gen.js など)は開いたときに保存されます
+  './bible/books.js',
+  './bible/lexicon.js',
 ];
 
 self.addEventListener('install', (event) => {
