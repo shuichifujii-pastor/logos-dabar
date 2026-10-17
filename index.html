@@ -520,6 +520,12 @@
                 </div>
               </div>
 
+              <!-- Plain-language Grammar Help -->
+              <div id="inspGrammarHelp" class="hidden p-3 rounded-lg bg-amber-50/70 border border-amber-200/80 space-y-1.5">
+                <div class="text-[11px] font-semibold text-amber-900">🔰 やさしい文法解説</div>
+                <div id="inspGrammarHelpBody" class="text-xs text-stone-700 leading-relaxed space-y-1"></div>
+              </div>
+
               <!-- Core Meaning & Nuance -->
               <div class="space-y-2">
                 <div>
@@ -2339,6 +2345,7 @@
       }
       document.getElementById("inspStrong").textContent = `${word.strong} (${isHebrew ? "ヘブライ語辞書" : "ギリシア語辞書"})`;
       document.getElementById("inspMorph").textContent = word.morph;
+      renderGrammarHelp(word);
       document.getElementById("inspGloss").textContent = word.gloss;
       document.getElementById("inspDefinition").textContent = word.definition;
 
@@ -3363,6 +3370,169 @@
       return out.concat(flags).filter(Boolean).join("・");
     }
 
+    // ---- やさしい文法解説: 文法表示（日本語）に含まれる用語を見つけて、短い説明を組み立てる ----
+    // 収録節の文法表示（"Qal未完了態" など）にも使えるよう、英語名や別表記もここで読み替える
+    const GRAMMAR_ALIASES = [
+      [/Hithpael/gi, "ヒトパエル"], [/Hophal/gi, "ホフアル"], [/Hiphil/gi, "ヒフィル"], [/Niphal/gi, "ニファル"],
+      [/Piel/gi, "ピエル"], [/Pual/gi, "プアル"], [/Qal/gi, "カル"],
+      [/未完了態/g, "未完了形"], [/完了態/g, "完了形"], [/ワイィクトル|ワウ継続法/g, "継続未完了形"]
+    ];
+    const STEM_NOTE = "語根の意味に「強め・使役・受け身」などの色合いを加える、動詞の型（語幹）の一つです。";
+    const HEB_GRAMMAR_HELP = {
+      "カル受動": "カルの古い受動形（〜される）です。",
+      "カル": "最も基本的な動詞の型（語幹）で、語根のもとの意味をそのまま能動で表します。",
+      "ニファル": "多くは受け身（〜される）や、自分自身に向かう動作（〜する・〜になる）を表す型です。",
+      "ピエル": "動作を強めたり、ある状態を引き起こしたりする意味になることの多い型です。",
+      "プアル": "ピエルの受け身の形（〜される）です。",
+      "ヒフィル": "「〜させる」という使役の意味になることの多い型です。",
+      "ホフアル": "ヒフィルの受け身の形（〜させられる）です。",
+      "ヒトパエル": "自分自身に向かう動作（自分を〜する）や、互いに〜する動作を表すことの多い型です。",
+      "ポレル": "一部の動詞でピエルの代わりに使われる型です。" , "ポラル": "ポレルの受け身の形です。",
+      "ヒトポレル": "一部の動詞でヒトパエルの代わりに使われる型（再帰・相互）です。",
+      "ピルペル": "語根の音を重ねた型で、動作の繰り返しや強めを表すことがあります。",
+      "ヒトパルペル": "ピルペルの再帰の形です。",
+      "ペアル": "アラム語の最も基本的な型で、ヘブライ語のカルにあたります。",
+      "ペイル": "アラム語ペアルの受け身の形です。",
+      "パエル": "アラム語の強めの型で、ヘブライ語のピエルにあたります。",
+      "ハフェル": "アラム語の使役の型（〜させる）で、ヘブライ語のヒフィルにあたります。",
+      "アフェル": "アラム語の使役の型（〜させる）で、ヘブライ語のヒフィルにあたります。",
+      "ヒトペエル": "アラム語ペアルの受け身・再帰の形です。", "イトペエル": "アラム語ペアルの受け身・再帰の形です。",
+      "ヒトパアル": "アラム語パエルの受け身・再帰の形です。", "イトパアル": "アラム語パエルの受け身・再帰の形です。",
+      "継続未完了形": "物語で出来事を次々に語るときの代表的な形（ワイィクトル）です。ふつう「そして〜した」と過去の出来事として訳されます。",
+      "継続完了形": "接続詞「ワウ」＋完了形で、前の動詞を受けて続く動作を表します（ウェカタル）。未来・命令・習慣の流れの中で使われることが多い形です。",
+      "未完了形（接続詞付き）": "接続詞「ワウ（そして）」が付いた未完了形です。「〜するように」という目的や願いを表すこともあります。",
+      "未完了形": "動作をまだ完結していないもの（これから起こる・繰り返す・続いている）として表す形です。未来や習慣、願いを表すことが多い形です。",
+      "完了形": "動作を完結したひとまとまりとして表す形です。物語では過去の出来事を表すことが多い一方、詩や預言では今の状態や確実な未来を表すこともあります。",
+      "未完了": "動作をまだ完結していないもの（これから起こる・繰り返す・続いている）として表す形（未完了形）です。",
+      "完了": "動作を完結したひとまとまりとして表す形（完了形）です。物語では過去の出来事を表すことが多い形です。",
+      "願望形": "1人称で「〜しよう」「〜させてください」という意志や願いを表す形です。",
+      "指示形": "主に3人称で「〜するように」「〜させよ」という願い・命令を表す形です。",
+      "命令形": "相手（2人称）に「〜せよ」と命じたり願ったりする形です。",
+      "能動分詞": "「〜している（人・もの）」を表し、続いている動作や状態を描きます。形容詞や名詞のようにも使われます。",
+      "受動分詞": "「〜された（人・もの）」という状態を表します。",
+      "分詞": "動詞からできた形容詞のような形で、「〜している（人）」などと訳されます。",
+      "不定詞独立形": "動詞を強める（「必ず〜する」）ときなどに使われる形です。命令の代わりになることもあります。",
+      "不定詞連語形": "「〜すること」「〜するために」「〜するとき」など、名詞のように使われる形です。前置詞とよく一緒に使われます。",
+      "連語形": "後ろの語と結びついて「〜の」を表す形です（例:「王の家」の「家」）。",
+      "絶対形": "名詞・形容詞のいちばん基本の形です。",
+      "限定形": "アラム語で、語尾によって「その〜」と特定する形です。",
+      "双数": "両手・両目など「二つで一組」のものを表す数です。",
+      "通性": "男性・女性の区別がないことを示します。",
+      "継続のワウ": "物語で出来事を続けて語るときに動詞の前に付く接続詞「ワウ（そして）」です。",
+      "目的語標識": "直接目的語が特定のもの（「その〜を」）であることを示す印で、ふつう訳されません。",
+      "定冠詞": "「その〜」と、特定のものを指す働きをします。",
+      "代名詞接尾辞": "語の後ろに付く代名詞です。名詞に付けば「〜の（所有）」、動詞や前置詞に付けば「〜を・〜に」を表します。",
+      "方向のヘー": "語尾に付いて「〜へ（の方へ）」と方向を表します。",
+      "付加のヘー": "語尾に付く音で、願いや語調を強めます。",
+      "付加のヌン": "語尾に付く音で、語調を強めたり整えたりします。",
+      "神聖四文字": "神の御名 יהוה（YHWH）です。ユダヤ教では敬意から「アドナイ（主）」と読み替え、口語訳では「主」と訳されます。"
+    };
+    const GRK_GRAMMAR_HELP = {
+      "第2アオリスト": "語幹の形そのものが変わるアオリストです。意味は普通のアオリストと同じです。",
+      "アオリスト": "動作を一つの出来事として、ひとまとめに述べる形です。直説法ではふつう過去のことを表します。ただし、形そのものが「一度限り」を意味するわけではありません。",
+      "未完了過去": "過去に続いていた、または繰り返されていた動作（「〜していた」）を表します。",
+      "過去完了": "過去のある時点までに完了し、その結果が続いていたことを表します。",
+      "完了": "過去に完了した動作の結果が、今も続いていることを表します（「〜してある」「〜している」）。",
+      "現在": "動作を続いているもの・繰り返されるものとして表す形です。直説法では今のことを表します。",
+      "未来": "これから起こることを表します。",
+      "中動/受動態": "中動態・受動態の形をとる動詞です。",
+      "中動態/受動態": "中動態か受動態か、形の上では区別できません。文脈で判断します。",
+      "異態動詞": "形は中動態や受動態ですが、意味は能動で訳される動詞です。",
+      "能動態": "主語が動作をすることを表します。",
+      "中動態": "主語が自分のために、または自分自身に関わって動作をすることを表します。",
+      "受動態": "主語が動作を受けること（「〜される」）を表します。",
+      "直説法": "事実として述べる言い方です。",
+      "接続法": "可能性・目的（〜するために）・条件・勧め（〜しよう）などを表す言い方です。",
+      "希求法": "「〜しますように」という願いなどを表す、まれな言い方です。",
+      "命令法": "命令や依頼（「〜せよ」「〜してください」）を表します。",
+      "命令的分詞": "命令の意味で使われる分詞です。",
+      "不定詞": "「〜すること」「〜するために」など、名詞のように使われる形です。",
+      "分詞": "動詞からできた形容詞で、「〜している（人）」「〜したので」「〜しながら」などと訳されます。格・数・性を持ちます。",
+      "主格": "文の主語（「〜が」「〜は」）を表します。",
+      "属格": "「〜の」（所有・関係）や「〜から」（出どころ）を表します。",
+      "与格": "「〜に」（相手）、「〜で」（手段）、「〜において」（場所・時）などを表します。",
+      "対格": "直接目的語（「〜を」）を表します。",
+      "呼格": "呼びかけ（「〜よ」）を表します。",
+      "冠詞": "「その〜」と特定する働きをします。ギリシア語には「ある〜」にあたる不定冠詞はありません。",
+      "関係代名詞": "「〜するところの（人・もの）」と、前の語を説明する文をつなぎます。",
+      "再帰代名詞": "「自分自身」を表し、主語と同じ人・ものを指します。",
+      "比較級": "「より〜」と比べる形です。",
+      "最上級": "「最も〜」を表す形です。強めの意味（「非常に〜」）にもなります。"
+    };
+
+    // 人称・性・数から、主語の代名詞の目安を作る
+    function subjectPronoun(seg) {
+      const p = (/([123])人称/.exec(seg) || [])[1];
+      if (!p) return "";
+      const pl = /複数/.test(seg);
+      const masc = /男性/.test(seg);
+      const fem = /女性/.test(seg);
+      if (p === "1") return pl ? "私たち" : "私";
+      if (p === "2") return pl ? "あなたがた" : masc ? "あなた（男性）" : fem ? "あなた（女性）" : "あなた";
+      if (pl) return fem ? "彼女ら" : "彼ら";
+      return masc ? "彼" : fem ? "彼女" : "彼・それ";
+    }
+
+    function explainGrammar(morph, lang) {
+      if (!morph) return null;
+      let text = morph;
+      GRAMMAR_ALIASES.forEach(([re, rep]) => { text = text.replace(re, rep); });
+      const help = lang === "Hebrew" ? HEB_GRAMMAR_HELP : GRK_GRAMMAR_HELP;
+      const summary = [];
+      text.split(/[＋+]/).forEach(seg => {
+        const who = subjectPronoun(seg);
+        if (!who) return;
+        const pgn = seg.match(/[123]人称|男性|女性|通性|中性|単数|複数|双数/g).join("・");
+        if (/接尾辞/.test(seg)) {
+          summary.push(`語の後ろに付いた代名詞は「${who}」（${pgn}）を指します。`);
+        } else if (/動詞|カル|ニファル|ピエル|ヒフィル|ヒトパエル|ペアル|直説法|接続法|命令法|希求法|完了|未来|現在|アオリスト/.test(seg)) {
+          summary.push(`主語は「${who}」（${pgn}）です。`);
+        }
+      });
+      // 長い用語から順に探し、見つかった部分は消して二重に数えない
+      const items = [];
+      let rest = text;
+      Object.keys(help).sort((a, b) => b.length - a.length).forEach(term => {
+        const at = rest.indexOf(term);
+        if (at < 0) return;
+        items.push({ term, text: help[term], at });
+        rest = rest.split(term).join("〓".repeat(term.length));
+      });
+      // 語幹名がわからない珍しい型
+      if (lang === "Hebrew" && !items.some(i => /型/.test(i.text)) && /^動詞・([^・]+)/.test(text)) {
+        const stem = /^動詞・([^・]+)/.exec(text)[1];
+        if (!help[stem] && !/形|分詞/.test(stem)) items.push({ term: stem, text: STEM_NOTE, at: 0 });
+      }
+      items.sort((a, b) => a.at - b.at);
+      if (!summary.length && !items.length) return null;
+      return { summary: summary.slice(0, 3), items: items.slice(0, 8) };
+    }
+
+    function renderGrammarHelp(word) {
+      const box = document.getElementById("inspGrammarHelp");
+      if (!box) return;
+      const body = document.getElementById("inspGrammarHelpBody");
+      const ex = explainGrammar(word.morph, word.lang);
+      box.classList.toggle("hidden", !ex);
+      body.innerHTML = "";
+      if (!ex) return;
+      ex.summary.forEach(s => {
+        const p = document.createElement("p");
+        p.className = "font-semibold text-stone-800";
+        p.textContent = s;
+        body.appendChild(p);
+      });
+      ex.items.forEach(item => {
+        const row = document.createElement("div");
+        const term = document.createElement("span");
+        term.className = "font-semibold text-amber-900";
+        term.textContent = `「${item.term}」`;
+        row.appendChild(term);
+        row.appendChild(document.createTextNode(item.text));
+        body.appendChild(row);
+      });
+    }
+
     let _curatedByStrong = null;
     function curatedLexEntry(strong) {
       if (!_curatedByStrong) _curatedByStrong = new Map(getUnifiedLexicon().map(e => [e.strong, e]));
@@ -3423,7 +3593,7 @@
       if (row[4]) notes.push("この節はネストレ・アーラント本文にはないため、公認本文（TR）の語を表示しています。");
       if (!row[2]) notes.push("口語訳ではこの節は前後の節に含まれています。");
       if (curatedIdFor(code, c, v)) notes.push("この節には詳しい解説付きの収録データがあります（上の「📝 この節の詳しい解説を見る」）。");
-      notes.push("日本語訳: 口語訳聖書。単語の意味は英語の辞書データ（STEPBible）です。");
+      notes.push("日本語訳: 口語訳聖書。辞書の詳しい説明は英語の辞書データ（STEPBible）です。");
       const verse = {
         id,
         isFullBible: true,
