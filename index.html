@@ -253,6 +253,29 @@
     .ld-nav-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     .ld-nav-book { flex: 1 1 220px; min-width: 0; }
     .ld-nav-num { flex: 0 0 6.5rem; }
+    .ld-float-nav {
+      position: fixed; left: 0; right: 0; margin: 0 auto; width: fit-content; z-index: 40;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+      display: flex; align-items: center; gap: 4px; padding: 4px;
+      max-width: calc(100vw - 24px);
+      background: rgba(28, 25, 23, 0.92); border: 1px solid #44403c; border-radius: 9999px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+    .ld-float-nav button {
+      padding: 8px 16px; border-radius: 9999px; font-size: 14px; font-weight: 600;
+      color: #fef3c7; background: #d97706; white-space: nowrap; flex-shrink: 0;
+    }
+    @media (max-width: 400px) { .ld-float-nav button { padding: 8px 12px; } }
+    .ld-float-nav button:hover { background: #f59e0b; }
+    .ld-float-nav button:active { transform: scale(0.96); }
+    .ld-float-ref {
+      color: #e7e5e4; font-size: 12px; padding: 0 8px; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw;
+    }
+    #viewReader { padding-bottom: 72px; }
+    /* 長い選択肢の文字でスマホの画面幅からはみ出さないように */
+    #voiceModeSelect, #speechRateSelect, #customVoiceSelect { max-width: 100%; min-width: 0; }
+    div:has(> #voiceModeSelect) { max-width: 100%; min-width: 0; }
   </style>
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#1c1917" />
@@ -557,6 +580,13 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Floating Prev/Next (画面のどこを見ていても押せる前後の節ボタン) -->
+      <div class="ld-float-nav" role="navigation" aria-label="前後の節へ移動">
+        <button id="floatPrevVerseBtn" type="button" title="前の節">‹ 前の節</button>
+        <span id="floatVerseRef" class="ld-float-ref"></span>
+        <button id="floatNextVerseBtn" type="button" title="次の節">次の節 ›</button>
       </div>
     </section>
 
@@ -2194,6 +2224,7 @@
       document.getElementById("verseLangBadge").textContent =
         isHebrew ? "旧約・聖書ヘブライ語" : "新約・コイネー・ギリシア語";
       document.getElementById("verseTitle").textContent = verse.reference;
+      document.getElementById("floatVerseRef").textContent = verse.reference;
       document.getElementById("verseCommentaryLabel").textContent = verse.isFullBible ? "出典・注記：" : "原典釈義ポイント：";
       syncFullNav();
       document.getElementById("verseDirectionHint").textContent =
@@ -3964,6 +3995,9 @@
 
       document.getElementById("prevVerseBtn").addEventListener("click", () => stepVerse(-1));
       document.getElementById("nextVerseBtn").addEventListener("click", () => stepVerse(1));
+      // 画面下に浮かぶボタンも同じ動き
+      document.getElementById("floatPrevVerseBtn").addEventListener("click", () => stepVerse(-1));
+      document.getElementById("floatNextVerseBtn").addEventListener("click", () => stepVerse(1));
 
       // Audio Controls Wiring (Deferred so initial render is instantaneous)
       setTimeout(refreshVoiceCatalog, 60);
