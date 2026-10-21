@@ -3589,7 +3589,9 @@
           return e ? `${e[0]}（${e[4] || e[2]}）` : k;
         }).join(" ＋ "));
       }
-      if (lex[2] || lex[3]) defParts.push(`辞書（英語）: ${lex[2]}${lex[3] ? " — " + lex[3] : ""}`);
+      // よく出る語は辞書の説明の日本語訳（6番目の項目）があり、ない語は英語のまま
+      if (lex[5]) defParts.push(`辞書: ${lex[5]}`);
+      else if (lex[2] || lex[3]) defParts.push(`辞書（英語）: ${lex[2]}${lex[3] ? " — " + lex[3] : ""}`);
       return {
         surface,
         surfaceTranslit: normFullTranslit(translit, lang),
@@ -3624,7 +3626,7 @@
       if (row[4]) notes.push("この節はネストレ・アーラント本文にはないため、公認本文（TR）の語を表示しています。");
       if (!row[2]) notes.push("口語訳ではこの節は前後の節に含まれています。");
       if (curatedIdFor(code, c, v)) notes.push("この節には詳しい解説付きの収録データがあります（上の「📝 この節の詳しい解説を見る」）。");
-      notes.push("日本語訳: 口語訳聖書。辞書の詳しい説明は英語の辞書データ（STEPBible）です。");
+      notes.push("日本語訳: 口語訳聖書。辞書の説明は STEPBible の辞書データで、よく出る約2,000語は日本語訳、それ以外は英語です。");
       const verse = {
         id,
         isFullBible: true,
