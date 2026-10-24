@@ -371,12 +371,10 @@
           <select id="fullVerseSelect" aria-label="節" class="ld-nav-num rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
           <button id="fullOpenCuratedBtn" type="button" class="hidden px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium transition">📝 この節の詳しい解説を見る</button>
         </div>
-        <p class="text-[10px] text-stone-400">原語データ: STEPBible.org（Tyndale House Cambridge, CC BY 4.0）／ 日本語訳: 口語訳聖書（日本聖書協会 1954・1955年、パブリックドメイン）</p>
       </div>
 
-      <!-- Filter & Verse Selector Bar -->
-      <div class="bg-white rounded-xl border border-stone-200 p-4 shadow-sm space-y-3">
-        <div>
+      <!-- 常時オン・非表示にした旧コントロール（検索窓・表示項目・自動発音。内部の処理が参照するため残す） -->
+      <div id="ldFixedControls" class="hidden" hidden aria-hidden="true">
           <!-- Quick Search Input -->
           <div>
             <div class="flex items-center justify-between mb-1">
@@ -388,7 +386,6 @@
               <button id="clearQuickFilterBtn" type="button" title="クリア" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs font-bold">✕</button>
             </div>
           </div>
-        </div>
 
         <!-- Reader Live Japanese Search Hit Drawer (appears when typing in quickFilterInput) -->
         <div id="readerSearchDrawer" class="hidden pt-2 border-t border-amber-200 bg-amber-50/40 rounded-lg p-3 space-y-2">
@@ -404,10 +401,6 @@
           <div id="readerSearchHitList" class="flex flex-wrap gap-1.5"></div>
         </div>
 
-        <!-- Display Options Row -->
-        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 text-xs">
-          <div class="flex flex-wrap items-center gap-3">
-            <span class="font-semibold text-stone-500">表示項目:</span>
             <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
               <input id="toggleTranslit" type="checkbox" checked class="rounded text-amber-600 focus:ring-amber-500" />
               <span>発音（音訳）</span>
@@ -420,19 +413,22 @@
               <input id="toggleStrong" type="checkbox" checked class="rounded text-amber-600 focus:ring-amber-500" />
               <span>Strong番号</span>
             </label>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
             <label class="inline-flex items-center gap-1.5 cursor-pointer select-none bg-amber-50 border border-amber-200 px-2 py-1 rounded text-amber-900 font-medium">
               <input id="toggleAutoSpeak" type="checkbox" checked class="rounded text-amber-600 focus:ring-amber-500" />
               <span>🔊 単語クリック時に自動発音</span>
             </label>
+      </div>
+
+      <!-- 発音・移動コントロール -->
+      <div class="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2 text-xs">
             <select id="voiceModeSelect" aria-label="発音スタイル選択" class="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
-              <option value="realistic_auto" selected>発音: 自動（Web Speech → クラウド音声 → WebAudio内蔵シンセ自動切替）</option>
+              <option value="realistic_auto">発音: 自動（Web Speech → クラウド音声 → WebAudio内蔵シンセ自動切替）</option>
               <option value="webaudio_synth">発音: 内蔵WebAudio声道シンセ（TTS非対応ブラウザ・オフライン確実発音）</option>
               <option value="cloud_audio">発音: HTML5 Audio クラウドTTS（Web Speech非対応端末向け）</option>
               <option value="classical_koine">発音: 聖書古典再建音（コイネー・マソラ音韻 / カタカナなし）</option>
               <option value="native_only">発音: 現代ヘブライ・ギリシア語ネイティブ (he-IL / el-GR)</option>
-              <option value="kana_guide">発音: 日本語カナ発音ガイド (ja-JP)</option>
+              <option value="kana_guide" selected>発音: 日本語カナ発音ガイド (ja-JP)</option>
             </select>
             <select id="customVoiceSelect" aria-label="使用ボイス選択" class="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700 max-w-[210px] truncate focus:outline-none focus:ring-1 focus:ring-amber-500" title="端末内の高音質ニューラル音声を選択">
               <option value="AUTO">🎙️ ボイス: 自動（最高音質Neural優先）</option>
@@ -444,7 +440,6 @@
             </select>
             <button id="prevVerseBtn" type="button" class="px-2.5 py-1 rounded border border-stone-300 hover:bg-stone-100 text-stone-700 font-medium transition">← 前の節</button>
             <button id="nextVerseBtn" type="button" class="px-2.5 py-1 rounded border border-stone-300 hover:bg-stone-100 text-stone-700 font-medium transition">次の節 →</button>
-          </div>
         </div>
       </div>
 
@@ -480,12 +475,6 @@
             <div class="space-y-1">
               <div class="text-xs font-semibold text-stone-400 uppercase">日本語訳（口語・直訳対照）</div>
               <p id="verseJapaneseText" class="serif-jp text-base sm:text-lg text-stone-800 leading-relaxed">キリスト・イエスのしもべであるパウロとテモテから、フィリピにいる、キリスト・イエスにあるすべての聖徒たち、ならびに監督たちと奉仕者たちへ。</p>
-            </div>
-
-            <!-- Theological / Exegetical Note -->
-            <div class="p-3 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs sm:text-sm text-stone-700 leading-relaxed">
-              <span id="verseCommentaryLabel" class="font-semibold text-amber-900">原典釈義ポイント：</span>
-              <span id="verseCommentary">パウロは他の手紙のように「使徒」という権威ある称号を用いず、2章7節でキリストが取られた姿と同じ「ドゥーロイ（しもべ・奴隷）」と自称して手紙を始めます。また新約書簡の中で唯一、宛先に「エピスコポイ（監督たち）」と「ディアコノイ（奉仕者・執事たち）」が明記されています。</span>
             </div>
           </div>
 
@@ -546,6 +535,7 @@
                 </div>
               </div>
 
+              <div class="hidden" hidden aria-hidden="true">
               <!-- Interactive Syllable & Pitch/Stress Prosody Guide (Works even without Web Speech API) -->
               <div class="p-3 rounded-lg bg-amber-50/70 border border-amber-200/80 space-y-1.5">
                 <div class="flex items-center justify-between gap-2">
@@ -555,6 +545,8 @@
                   </button>
                 </div>
                 <div id="inspSyllableGuide" class="flex flex-wrap items-center gap-1.5 pt-0.5"></div>
+              </div>
+
               </div>
 
               <!-- Badges: Strong's & Morphology -->
@@ -606,6 +598,15 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- 出典・注記（一番下段） -->
+      <div class="bg-white rounded-xl border border-stone-200 p-4 shadow-sm space-y-3">
+            <div class="p-3 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs sm:text-sm text-stone-700 leading-relaxed">
+              <span id="verseCommentaryLabel" class="font-semibold text-amber-900">原典釈義ポイント：</span>
+              <span id="verseCommentary">パウロは他の手紙のように「使徒」という権威ある称号を用いず、2章7節でキリストが取られた姿と同じ「ドゥーロイ（しもべ・奴隷）」と自称して手紙を始めます。また新約書簡の中で唯一、宛先に「エピスコポイ（監督たち）」と「ディアコノイ（奉仕者・執事たち）」が明記されています。</span>
+            </div>
+        <p class="text-[10px] text-stone-400">原語データ: STEPBible.org（Tyndale House Cambridge, CC BY 4.0）／ 日本語訳: 口語訳聖書（日本聖書協会 1954・1955年、パブリックドメイン）</p>
       </div>
 
       <!-- Floating Prev/Next (画面のどこを見ていても押せる前後の節ボタン) -->
