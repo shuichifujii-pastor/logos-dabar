@@ -273,6 +273,32 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw;
     }
     #viewReader { padding-bottom: 72px; }
+    /* 画面下部に固定した聖書個所の検索窓（前後の節ボタンはその上に重ねる） */
+    body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px); }
+    .ld-float-nav { bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); }
+    .ld-ref-bar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+      background: rgba(28, 25, 23, 0.97); border-top: 1px solid #44403c;
+      padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+    }
+    .ld-ref-row { display: flex; gap: 6px; align-items: center; max-width: 720px; margin: 0 auto; }
+    .ld-ref-row input {
+      flex: 1 1 auto; min-width: 0; font-size: 16px; padding: 9px 12px; border-radius: 9999px;
+      border: 1px solid #57534e; background: #fafaf9; color: #1c1917;
+    }
+    .ld-ref-row button {
+      flex: 0 0 auto; padding: 9px 14px; border-radius: 9999px; font-size: 14px; font-weight: 600;
+      color: #fef3c7; background: #d97706; white-space: nowrap;
+    }
+    .ld-ref-row button.ld-mic { background: #44403c; font-size: 16px; padding: 9px 12px; }
+    .ld-ref-row button.ld-mic.listening { background: #dc2626; animation: ldpulse 1s infinite; }
+    @keyframes ldpulse { 50% { opacity: 0.55; } }
+    .ld-ref-msg {
+      max-width: 720px; margin: 0 auto 4px; font-size: 12px; color: #fcd34d;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 0;
+    }
+    .ld-ref-msg:empty { display: none; }
     /* 長い選択肢の文字でスマホの画面幅からはみ出さないように */
     #voiceModeSelect, #speechRateSelect, #customVoiceSelect { max-width: 100%; min-width: 0; }
     div:has(> #voiceModeSelect) { max-width: 100%; min-width: 0; }
@@ -4097,6 +4123,173 @@
     } else {
       initLogosDabarApp();
     }
+  </script>
+
+  <!-- 画面下部に固定の聖書個所検索窓（音声入力つき） -->
+  <div class="ld-ref-bar" role="search" aria-label="聖書個所へ移動">
+    <div id="refBarMsg" class="ld-ref-msg" aria-live="polite"></div>
+    <form id="refBarForm" class="ld-ref-row" autocomplete="off">
+      <input id="refBarInput" type="text" inputmode="text" enterkeyhint="go"
+             placeholder="聖書個所（例: ヨハネ3:16）" aria-label="聖書個所">
+      <button id="refBarMic" class="ld-mic" type="button" title="音声入力" aria-label="音声入力">🎤</button>
+      <button type="submit">開く</button>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      var KANJI = { "〇": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9 };
+      // 漢数字を算用数字に（十六→16、百五十→150）
+      function kanjiToDigits(s) {
+        return s.replace(/[〇一二三四五六七八九十百]+/g, function (m) {
+          if (!/[十百]/.test(m)) return m.split("").map(function (ch) { return KANJI[ch]; }).join("");
+          var total = 0, cur = 0;
+          m.split("").forEach(function (ch) {
+            if (ch === "百") { total += (cur || 1) * 100; cur = 0; }
+            else if (ch === "十") { total += (cur || 1) * 10; cur = 0; }
+            else cur = KANJI[ch];
+          });
+          return String(total + cur);
+        });
+      }
+      var EN = {
+        gen: "gen genesis", exo: "exo exod exodus", lev: "lev leviticus", num: "num numbers", deut: "deut deu deuteronomy",
+        josh: "josh joshua", judg: "judg judges", ruth: "ruth", "1sam": "1sam 1samuel", "2sam": "2sam 2samuel",
+        "1kgs": "1kgs 1kings 1ki", "2kgs": "2kgs 2kings 2ki", "1chr": "1chr 1chronicles", "2chr": "2chr 2chronicles",
+        ezra: "ezra", neh: "neh nehemiah", esth: "esth esther", job: "job", ps: "ps psa psalm psalms", prov: "prov proverbs",
+        eccl: "eccl ecc ecclesiastes", song: "song sos songofsolomon", isa: "isa isaiah", jer: "jer jeremiah",
+        lam: "lam lamentations", ezek: "ezek eze ezekiel", dan: "dan daniel", hos: "hos hosea", joel: "joel", amos: "amos",
+        obad: "obad obadiah", jonah: "jonah", mic: "mic micah", nah: "nah nahum", hab: "hab habakkuk", zeph: "zeph zephaniah",
+        hag: "hag haggai", zech: "zech zechariah", mal: "mal malachi", mat: "mat matt matthew", mrk: "mrk mark mk",
+        luk: "luk luke lk", jhn: "jhn john jn", act: "act acts", rom: "rom romans", "1cor": "1cor 1corinthians",
+        "2cor": "2cor 2corinthians", gal: "gal galatians", eph: "eph ephesians", phil: "phil philippians", col: "col colossians",
+        "1th": "1th 1thess 1thessalonians", "2th": "2th 2thess 2thessalonians", "1tim": "1tim 1timothy", "2tim": "2tim 2timothy",
+        tit: "tit titus", phm: "phm philemon", heb: "heb hebrews", jas: "jas james", "1pet": "1pet 1peter", "2pet": "2pet 2peter",
+        "1jn": "1jn 1john", "2jn": "2jn 2john", "3jn": "3jn 3john", jude: "jude", rev: "rev revelation"
+      };
+      var SYN = [["ロマ", "ローマ"], ["エフェソ", "エペソ"], ["フィリピ", "ピリピ"], ["ヘブライ", "ヘブル"], ["ペトロ", "ペテロ"],
+        ["コヘレト", "伝道"], ["使徒言行録", "使徒行伝"], ["使徒の働き", "使徒行伝"], ["詩篇", "詩編"], ["篇", "編"],
+        ["ヨシュア", "ヨシュア"], ["サムエル", "サムエル"], ["黙示", "黙示録"], ["黙示録録", "黙示録"]];
+      function normJa(s) {
+        SYN.forEach(function (p) { s = s.split(p[0]).join(p[1]); });
+        return s.replace(/による|への|の|人/g, "");
+      }
+      function setMsg(t) { var m = document.getElementById("refBarMsg"); if (m) m.textContent = t || ""; }
+
+      function parseRef(raw) {
+        var q = kanjiToDigits(raw.normalize("NFKC")).replace(/[、。]/g, " ").trim();
+        if (!q) return null;
+        var ord = 0, rest = q, m;
+        if ((m = rest.match(/^第?\s*([1-3])\s*(?=[^\d\s:.,章篇編節])/))) { ord = +m[1]; rest = rest.slice(m[0].length); }
+        var ch = null, vs = null, book = rest;
+        if ((m = rest.match(/^(.*?)\s*(\d+)\s*(?:章|編|篇|[:.,]|\s)\s*(\d+)\s*節?\s*$/))) { book = m[1]; ch = +m[2]; vs = +m[3]; }
+        else if ((m = rest.match(/^(.*?)\s*(\d+)\s*(?:章|編|篇)?\s*$/))) { book = m[1]; ch = +m[2]; }
+        if ((m = book.match(/第\s*([1-3])/))) { if (!ord) ord = +m[1]; book = book.replace(m[0], ""); }
+        book = book.trim();
+        if (!book) return null;
+        return { book: book, ord: ord, c: ch || 1, v: vs || 1 };
+      }
+
+      function findBook(p) {
+        var idx = (window.LD_BIBLE && LD_BIBLE.index) || [];
+        if (!idx.length) return null;
+        if (/[A-Za-z]/.test(p.book)) {
+          var key = ((p.ord || "") + p.book.replace(/[^A-Za-z]/g, "")).toLowerCase();
+          var hit = null;
+          idx.forEach(function (b) {
+            var al = (EN[b.code] || b.code).split(" ");
+            if (!hit && al.indexOf(key) >= 0) hit = b;
+          });
+          if (!hit) idx.forEach(function (b) {
+            var al = (EN[b.code] || b.code).split(" ");
+            if (!hit && al.some(function (a) { return a.indexOf(key) === 0; })) hit = b;
+          });
+          return hit;
+        }
+        var k = normJa(p.book).replace(/\s+/g, "");
+        var needLetter = /手紙/.test(k);
+        var variants = [k];
+        var k2 = k.replace(/(手紙|書|記)$/, "");
+        if (k2 && k2 !== k) variants.push(k2);
+        function ordOf(name) { var o = name.match(/第([一二三])/); return o ? "一二三".indexOf(o[1]) + 1 : 0; }
+        function cand(b) {
+          var nm = b.name, n = normJa(nm.replace(/第[一二三]の?/g, ""));
+          if (/上$/.test(nm)) { n = normJa(nm.replace(/上$/, "")); }
+          if (/下$/.test(nm)) { n = normJa(nm.replace(/下$/, "")); }
+          return n;
+        }
+        function bOrd(b) { var o = ordOf(b.name); if (o) return o; if (/上$/.test(b.name)) return 1; if (/下$/.test(b.name)) return 2; return 0; }
+        var best = null, bestScore = 0;
+        idx.forEach(function (b) {
+          var n = cand(b), bo = bOrd(b);
+          if (needLetter && b.name.indexOf("手紙") < 0) return;
+          variants.forEach(function (v, vi) {
+            var s = 0;
+            if (n === v) s = 90; else if (n.indexOf(v) === 0) s = 60 - vi;
+            if (!s) return;
+            if (p.ord) { if (bo !== p.ord) return; s += 20; }
+            else if (bo) s -= 15;
+            s -= Math.min(n.length - v.length, 10) * 0.1;
+            if (s > bestScore) { bestScore = s; best = b; }
+          });
+        });
+        return best;
+      }
+
+      function goRef(raw) {
+        var p = parseRef(raw);
+        if (!p) { setMsg("聖書個所を入力してください（例: ヨハネ3:16）"); return; }
+        if (!window.LD_BIBLE || !LD_BIBLE.index) { setMsg("聖書データを読み込み中です。少し待ってからもう一度どうぞ"); return; }
+        var b = findBook(p);
+        if (!b) { setMsg("「" + raw + "」に当てはまる書が見つかりません"); return; }
+        var chs = b.chapters || [], chEntry = chs.filter(function (x) { return x[0] === p.c; })[0];
+        var c = p.c, v = p.v, note = "";
+        if (!chEntry) { c = chs.length ? chs[chs.length - 1][0] : 1; v = 1; note = "（" + p.c + "章は無いので最終章を表示）"; }
+        else if (chEntry[1].indexOf(v) < 0) { v = chEntry[1][0]; note = "（" + p.v + "節は無いので冒頭を表示）"; }
+        if (typeof switchTab === "function") switchTab("reader");
+        var done = (typeof goToPosition === "function" ? goToPosition(b.code, c, v) : null);
+        setMsg(b.name + " " + c + ":" + v + " を開きました" + note);
+        var inp = document.getElementById("refBarInput"); if (inp) inp.blur();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return done;
+      }
+      window.LD_goRef = goRef;
+
+      var form = document.getElementById("refBarForm"), input = document.getElementById("refBarInput");
+      form.addEventListener("submit", function (e) { e.preventDefault(); goRef(input.value); });
+      input.addEventListener("input", function () { setMsg(""); });
+
+      // 音声入力（Web Speech API。Chrome / Android / Safari など対応ブラウザで有効）
+      var mic = document.getElementById("refBarMic");
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { mic.style.display = "none"; return; }
+      var rec = null, listening = false;
+      function stop() { listening = false; mic.classList.remove("listening"); }
+      mic.addEventListener("click", function () {
+        if (listening && rec) { try { rec.stop(); } catch (e) {} return; }
+        rec = new SR();
+        rec.lang = "ja-JP"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+        var finalText = "";
+        rec.onstart = function () { listening = true; mic.classList.add("listening"); setMsg("🎤 聞いています… 例:「ヨハネの福音書 3章16節」"); };
+        rec.onresult = function (ev) {
+          var t = "";
+          for (var i = 0; i < ev.results.length; i++) { t += ev.results[i][0].transcript; if (ev.results[i].isFinal) finalText = t; }
+          input.value = t;
+        };
+        rec.onerror = function (ev) {
+          stop();
+          var msg = ev.error === "not-allowed" || ev.error === "service-not-allowed" ? "マイクの使用が許可されていません（ブラウザの設定で許可してください）"
+            : ev.error === "no-speech" ? "声が聞き取れませんでした" : "音声入力のエラー: " + ev.error;
+          setMsg(msg);
+        };
+        rec.onend = function () {
+          var was = listening; stop();
+          if (finalText || input.value) { if (finalText) { input.value = finalText; goRef(finalText); } }
+          else if (was) setMsg("声が聞き取れませんでした");
+        };
+        try { rec.start(); } catch (e) { stop(); setMsg("音声入力を開始できませんでした"); }
+      });
+    })();
   </script>
 <script>
   if ('serviceWorker' in navigator) {
