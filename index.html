@@ -419,30 +419,6 @@
             </label>
       </div>
 
-      <!-- 発音・移動コントロール -->
-      <div class="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-            <select id="voiceModeSelect" aria-label="発音スタイル選択" class="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
-              <option value="realistic_auto">発音: 自動（Web Speech → クラウド音声 → WebAudio内蔵シンセ自動切替）</option>
-              <option value="webaudio_synth">発音: 内蔵WebAudio声道シンセ（TTS非対応ブラウザ・オフライン確実発音）</option>
-              <option value="cloud_audio">発音: HTML5 Audio クラウドTTS（Web Speech非対応端末向け）</option>
-              <option value="classical_koine">発音: 聖書古典再建音（コイネー・マソラ音韻 / カタカナなし）</option>
-              <option value="native_only">発音: 現代ヘブライ・ギリシア語ネイティブ (he-IL / el-GR)</option>
-              <option value="kana_guide" selected>発音: 日本語カナ発音ガイド (ja-JP)</option>
-            </select>
-            <select id="customVoiceSelect" aria-label="使用ボイス選択" class="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700 max-w-[210px] truncate focus:outline-none focus:ring-1 focus:ring-amber-500" title="端末内の高音質ニューラル音声を選択">
-              <option value="AUTO">🎙️ ボイス: 自動（最高音質Neural優先）</option>
-            </select>
-            <select id="speechRateSelect" aria-label="読み上げ速度" class="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
-              <option value="0.78">速度: ゆっくり朗読 (0.78x)</option>
-              <option value="0.92" selected>速度: 自然な朗読 (0.92x)</option>
-              <option value="1.05">速度: やや速め (1.05x)</option>
-            </select>
-            <button id="prevVerseBtn" type="button" class="px-2.5 py-1 rounded border border-stone-300 hover:bg-stone-100 text-stone-700 font-medium transition">← 前の節</button>
-            <button id="nextVerseBtn" type="button" class="px-2.5 py-1 rounded border border-stone-300 hover:bg-stone-100 text-stone-700 font-medium transition">次の節 →</button>
-        </div>
-      </div>
-
       <!-- Reader Two-Column Content -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <!-- Left 7 cols: Verse Banner + Interlinear Word Grid -->
@@ -609,6 +585,30 @@
         <p class="text-[10px] text-stone-400">原語データ: STEPBible.org（Tyndale House Cambridge, CC BY 4.0）／ 日本語訳: 口語訳聖書（日本聖書協会 1954・1955年、パブリックドメイン）</p>
       </div>
 
+      <!-- 発音・移動コントロール（一番下段） -->
+      <div class="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <select id="voiceModeSelect" aria-label="発音スタイル選択" class="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
+              <option value="realistic_auto">発音: 自動（Web Speech → クラウド音声 → WebAudio内蔵シンセ自動切替）</option>
+              <option value="webaudio_synth">発音: 内蔵WebAudio声道シンセ（TTS非対応ブラウザ・オフライン確実発音）</option>
+              <option value="cloud_audio">発音: HTML5 Audio クラウドTTS（Web Speech非対応端末向け）</option>
+              <option value="classical_koine">発音: 聖書古典再建音（コイネー・マソラ音韻 / カタカナなし）</option>
+              <option value="native_only">発音: 現代ヘブライ・ギリシア語ネイティブ (he-IL / el-GR)</option>
+              <option value="kana_guide" selected>発音: 日本語カナ発音ガイド (ja-JP)</option>
+            </select>
+            <select id="customVoiceSelect" aria-label="使用ボイス選択" class="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700 max-w-[210px] truncate focus:outline-none focus:ring-1 focus:ring-amber-500" title="端末内の高音質ニューラル音声を選択">
+              <option value="AUTO">🎙️ ボイス: 自動（最高音質Neural優先）</option>
+            </select>
+            <select id="speechRateSelect" aria-label="読み上げ速度" class="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
+              <option value="0.78">速度: ゆっくり朗読 (0.78x)</option>
+              <option value="0.92" selected>速度: 自然な朗読 (0.92x)</option>
+              <option value="1.05">速度: やや速め (1.05x)</option>
+            </select>
+            <button id="prevVerseBtn" type="button" class="px-2.5 py-1 rounded border border-stone-300 hover:bg-stone-100 text-stone-700 font-medium transition">← 前の節</button>
+            <button id="nextVerseBtn" type="button" class="px-2.5 py-1 rounded border border-stone-300 hover:bg-stone-100 text-stone-700 font-medium transition">次の節 →</button>
+        </div>
+      </div>
+
       <!-- Floating Prev/Next (画面のどこを見ていても押せる前後の節ボタン) -->
       <div class="ld-float-nav" role="navigation" aria-label="前後の節へ移動">
         <button id="floatPrevVerseBtn" type="button" title="前の節">‹ 前の節</button>
@@ -720,7 +720,14 @@
       <div class="bg-white rounded-xl border border-stone-200 p-5 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-base font-bold text-stone-900">保存した原典単語帳・研究メモ</h2>
-          <p class="text-xs text-stone-500">ブラウザ内に自動保存されます。クリックすると該当する節と詳細を開きます。</p>
+          <p class="text-xs text-stone-500">この端末に自動保存されます。Googleでログインすると、どの端末からでも同じ単語帳を入力・確認できます。クリックすると該当する節と詳細を開きます。</p>
+          <div id="cloudSyncBox" class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <span id="cloudSyncStatus" class="text-stone-500">☁️ クラウド同期: 確認中…</span>
+            <button id="cloudLoginBtn" type="button" class="hidden px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:bg-stone-50 font-semibold text-stone-800 shadow-sm transition">
+              <span style="color:#4285F4">G</span> Googleでログイン
+            </button>
+            <button id="cloudLogoutBtn" type="button" class="hidden px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-stone-100 font-medium text-stone-600 transition">ログアウト</button>
+          </div>
         </div>
         <div class="flex items-center gap-2">
           <button id="exportNotesBtn" type="button" class="px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-stone-100 text-xs font-medium text-stone-700 transition">
@@ -2152,6 +2159,8 @@
         // Ignore storage error in restricted iframe
       }
       updateSavedBadge();
+      // Googleアカウントでログイン中ならクラウドにも保存（下の LD_cloud を参照）
+      if (window.LD_cloud) window.LD_cloud.push();
     }
 
     function updateSavedBadge() {
@@ -4124,6 +4133,196 @@
     } else {
       initLogosDabarApp();
     }
+  </script>
+
+  <!-- 単語帳のクラウド同期（Googleアカウント + Firebase） -->
+  <script>
+    // Firebase プロジェクトの設定（Firebase コンソール →「プロジェクトの設定」→「マイアプリ」の firebaseConfig）。
+    // null にするとクラウド同期を使わず、端末内だけに保存します。
+    // 神学者辞典アプリと同じプロジェクト（theologians-notes）を共用し、保存先は users/{uid}/logosDabar/vocab に分けています。
+    window.LD_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCDoyuL0NHaEbVI147pUpxNs3HmEGzcMe8",
+      authDomain: "theologians-notes.firebaseapp.com",
+      projectId: "theologians-notes",
+      storageBucket: "theologians-notes.firebasestorage.app",
+      messagingSenderId: "719794477661",
+      appId: "1:719794477661:web:b4333bba680c012dcccbb4"
+    };
+  </script>
+  <script>
+    (function () {
+      var SDK = "https://www.gstatic.com/firebasejs/10.14.1/";
+      var META_KEY = "logos_dabar_saved_meta_v1";
+      var SAVED_KEY = "logos_dabar_saved_v1";
+      var statusEl = document.getElementById("cloudSyncStatus");
+      var loginBtn = document.getElementById("cloudLoginBtn");
+      var logoutBtn = document.getElementById("cloudLogoutBtn");
+      var auth = null, db = null, user = null, unsub = null, pushTimer = null, ready = false;
+
+      function setStatus(t) { if (statusEl) statusEl.textContent = t; }
+      function show(el, on) { if (el) el.classList.toggle("hidden", !on); }
+
+      // 各語の最終更新時刻（t）と削除の記録（del）を端末に保存し、端末間で新しい方を採用する
+      function loadMeta() {
+        var m = null;
+        try { m = JSON.parse(localStorage.getItem(META_KEY) || "null"); } catch (e) {}
+        if (!m) {
+          m = { t: {}, del: {}, last: {} };
+          savedWords.forEach(function (w) { m.t[w.strong] = 1; m.last[w.strong] = JSON.stringify(w); });
+        }
+        m.t = m.t || {}; m.del = m.del || {}; m.last = m.last || {};
+        return m;
+      }
+      function saveMeta(m) { try { localStorage.setItem(META_KEY, JSON.stringify(m)); } catch (e) {} }
+
+      // 端末内の単語帳の変更を記録（追加・メモ変更・削除）
+      function recordLocalChanges() {
+        var m = loadMeta(), now = Date.now(), seen = {};
+        savedWords.forEach(function (w) {
+          var j = JSON.stringify(w);
+          seen[w.strong] = true;
+          if (m.last[w.strong] !== j) { m.t[w.strong] = now; m.last[w.strong] = j; delete m.del[w.strong]; }
+        });
+        Object.keys(m.last).forEach(function (s) {
+          if (!seen[s]) { m.del[s] = now; delete m.last[s]; delete m.t[s]; }
+        });
+        var old = now - 180 * 864e5;
+        Object.keys(m.del).forEach(function (s) { if (m.del[s] < old) delete m.del[s]; });
+        saveMeta(m);
+        return m;
+      }
+
+      function merge(m, remote) {
+        var rItems = {}, lItems = {}, keys = {};
+        (remote.items || []).forEach(function (w) { rItems[w.strong] = w; keys[w.strong] = 1; });
+        savedWords.forEach(function (w) { lItems[w.strong] = w; keys[w.strong] = 1; });
+        var rt = remote.t || {}, rdel = remote.del || {};
+        Object.keys(rdel).forEach(function (s) { keys[s] = 1; });
+        Object.keys(m.del).forEach(function (s) { keys[s] = 1; });
+        var out = { items: [], t: {}, del: {} };
+        Object.keys(keys).forEach(function (s) {
+          var lt = lItems[s] ? (m.t[s] || 1) : 0, r = rItems[s] ? (rt[s] || 1) : 0;
+          var item = null, it = 0;
+          if (lItems[s] && lt >= r) { item = lItems[s]; it = lt; } else if (rItems[s]) { item = rItems[s]; it = r; }
+          var dt = Math.max(m.del[s] || 0, rdel[s] || 0);
+          if (item && it > dt) { out.items.push(item); out.t[s] = it; }
+          else if (dt) out.del[s] = dt;
+        });
+        out.items.sort(function (a, b) { return (out.t[b.strong] || 0) - (out.t[a.strong] || 0); });
+        return out;
+      }
+
+      // 統合した結果を端末に反映（persistSavedState は呼ばない＝クラウドへの書き戻しの無限ループを避ける）
+      function applyLocal(merged) {
+        savedWords = merged.items;
+        try { localStorage.setItem(SAVED_KEY, JSON.stringify(savedWords)); } catch (e) {}
+        var m = { t: merged.t, del: merged.del, last: {} };
+        savedWords.forEach(function (w) { m.last[w.strong] = JSON.stringify(w); });
+        saveMeta(m);
+        try { updateSavedBadge(); } catch (e) {}
+        try { renderSavedView(); } catch (e) {}
+        try { renderCurrentVerse(); } catch (e) {}
+      }
+
+      function docRef() { return db.collection("users").doc(user.uid).collection("logosDabar").doc("vocab"); }
+      function errText(e) {
+        if (e && e.code === "permission-denied") return "Firebase のルールに Logos & Dabar 用の許可がまだありません（Googleログイン設定手順.md を参照）";
+        return (e && (e.code || e.message)) || "不明なエラー";
+      }
+
+      function writeRemote(merged) {
+        return docRef().set({
+          items: merged.items, t: merged.t, del: merged.del,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () {
+          setStatus("☁️ 同期済み（" + (user.email || user.displayName || "Google") + "）・" + savedWords.length + "語");
+        }).catch(function (e) { setStatus("☁️ クラウドへの保存に失敗しました: " + errText(e)); });
+      }
+
+      function syncWith(remote, forceWrite) {
+        var m = recordLocalChanges();
+        var merged = merge(m, remote || {});
+        applyLocal(merged);
+        var same = remote && JSON.stringify(remote.items || []) === JSON.stringify(merged.items)
+          && JSON.stringify(remote.del || {}) === JSON.stringify(merged.del);
+        if (forceWrite || !same) return writeRemote(merged);
+        setStatus("☁️ 同期済み（" + (user.email || user.displayName || "Google") + "）・" + savedWords.length + "語");
+      }
+
+      window.LD_cloud = {
+        push: function () {
+          recordLocalChanges();
+          if (!user || !ready) return;
+          setStatus("☁️ 同期中…");
+          clearTimeout(pushTimer);
+          pushTimer = setTimeout(function () {
+            docRef().get().then(function (snap) { syncWith(snap.exists ? snap.data() : null, false); })
+              .catch(function (e) { setStatus("☁️ 同期できませんでした（オフライン？）: " + errText(e)); });
+          }, 800);
+        }
+      };
+
+      function startUserSync() {
+        ready = false;
+        setStatus("☁️ クラウドの単語帳を読み込み中…");
+        unsub = docRef().onSnapshot(function (snap) {
+          if (snap.metadata.hasPendingWrites) return;
+          ready = true;
+          syncWith(snap.exists ? snap.data() : null, !snap.exists);
+        }, function (e) { setStatus("☁️ 読み込みに失敗しました: " + errText(e)); });
+      }
+
+      function loadScript(src) {
+        return new Promise(function (res, rej) {
+          var s = document.createElement("script");
+          s.src = src; s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
+
+      function init() {
+        var cfg = window.LD_FIREBASE_CONFIG;
+        if (!cfg) { setStatus("☁️ クラウド同期はまだ設定されていません（この端末にだけ保存されます）"); return; }
+        recordLocalChanges();
+        loadScript(SDK + "firebase-app-compat.js")
+          .then(function () { return loadScript(SDK + "firebase-auth-compat.js"); })
+          .then(function () { return loadScript(SDK + "firebase-firestore-compat.js"); })
+          .then(function () {
+            firebase.initializeApp(cfg);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            auth.getRedirectResult().catch(function (e) { setStatus("☁️ ログインに失敗しました: " + (e.code || e.message)); });
+            auth.onAuthStateChanged(function (u) {
+              if (unsub) { unsub(); unsub = null; }
+              user = u;
+              show(loginBtn, !u); show(logoutBtn, !!u);
+              if (u) startUserSync();
+              else { ready = false; setStatus("☁️ Googleでログインすると、どの端末からでも同じ単語帳を使えます"); }
+            });
+          })
+          .catch(function () { setStatus("☁️ オフラインのためクラウド同期を開始できません（端末内には保存されます）"); });
+      }
+
+      if (loginBtn) loginBtn.addEventListener("click", function () {
+        if (!auth) return;
+        var provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        auth.signInWithPopup(provider).catch(function (e) {
+          if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+            return auth.signInWithRedirect(provider);
+          }
+          if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
+            setStatus("☁️ ログインに失敗しました: " + (e.code || e.message));
+          }
+        });
+      });
+      if (logoutBtn) logoutBtn.addEventListener("click", function () {
+        if (auth) auth.signOut().then(function () { showToast("ログアウトしました（この端末の単語帳はそのまま残ります）"); });
+      });
+
+      if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", function () { setTimeout(init, 0); });
+      else setTimeout(init, 0);
+    })();
   </script>
 
   <!-- 画面下部に固定の聖書個所検索窓（音声入力つき） -->

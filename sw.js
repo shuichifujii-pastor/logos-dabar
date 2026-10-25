@@ -1,5 +1,5 @@
 // オフラインで動かすための仕組み(Service Worker)。make_pwa.py が pwa/sw.js を作ります。
-const CACHE = 'logos-dabar-0090bd0d386e';
+const CACHE = 'logos-dabar-c6bd94baadf2';
 const APP_FILES = [
   './',
   './index.html',
@@ -34,6 +34,8 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   // 発音の読み上げ音声は毎回ネットから取得
   if (req.url.includes('translate.googleapis.com')) return;
+  // Googleログインとクラウド同期(Firebase)の通信はキャッシュしない
+  if (/googleapis\.com|firebaseapp\.com|firebaseio\.com|accounts\.google\.com|apis\.google\.com/.test(req.url)) return;
 
   if (req.mode === 'navigate') {
     event.respondWith(caches.match('./index.html').then((hit) => hit || fetch(req)));
