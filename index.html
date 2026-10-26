@@ -732,8 +732,10 @@
             <button id="cloudLoginBtn" type="button" class="hidden px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:bg-stone-50 font-semibold text-stone-800 shadow-sm transition">
               <span style="color:#4285F4">G</span> Googleでログイン
             </button>
+            <button id="cloudSyncNowBtn" type="button" class="hidden px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 font-semibold text-amber-900 transition">🔄 今すぐ同期</button>
             <button id="cloudLogoutBtn" type="button" class="hidden px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-stone-100 font-medium text-stone-600 transition">ログアウト</button>
           </div>
+          <div id="cloudSyncInfo" class="mt-1 text-[11px] text-stone-400"></div>
         </div>
         <div class="flex items-center gap-2">
           <button id="exportNotesBtn" type="button" class="px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-stone-100 text-xs font-medium text-stone-700 transition">
@@ -5273,6 +5275,22 @@
       var statusEl = document.getElementById("cloudSyncStatus");
       var loginBtn = document.getElementById("cloudLoginBtn");
       var logoutBtn = document.getElementById("cloudLogoutBtn");
+      var syncNowBtn = document.getElementById("cloudSyncNowBtn");
+      var infoEl = document.getElementById("cloudSyncInfo");
+      var lastSyncAt = null;
+      // 端末どうしを見比べるための情報（アプリの版・ログイン中のアカウント・最後に同期した時刻）
+      function updateInfo() {
+        if (!infoEl) return;
+        var parts = ["この端末のアプリの版: " + (window.LD_APP_VERSION && window.LD_APP_VERSION.indexOf("__") < 0 ? window.LD_APP_VERSION : "開発版")];
+        if (user) parts.push("アカウント: " + (user.email || user.displayName || "Google"));
+        if (lastSyncAt) parts.push("最後に同期: " + lastSyncAt.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+        infoEl.textContent = parts.join("　／　");
+      }
+      function syncedStatus() {
+        lastSyncAt = new Date();
+        setStatus("☁️ 同期済み・" + savedWords.length + "語");
+        updateInfo();
+      }
       var auth = null, db = null, user = null, unsub = null, pushTimer = null, ready = false, lastRemote = null, pendingRender = false;
 
       function setStatus(t) { if (statusEl) statusEl.textContent = t; }
@@ -5380,7 +5398,7 @@
           items: merged.items, t: merged.t, del: merged.del,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(function () {
-          setStatus("☁️ 同期済み（" + (user.email || user.displayName || "Google") + "）・" + savedWords.length + "語");
+          syncedStatus();
         }).catch(function (e) { setStatus("☁️ クラウドへの保存に失敗しました: " + errText(e)); });
       }
 
@@ -5393,7 +5411,7 @@
         var same = remote && JSON.stringify(remote.items || []) === JSON.stringify(merged.items)
           && JSON.stringify(remote.del || {}) === JSON.stringify(merged.del);
         if (forceWrite || !same) return writeRemote(merged);
-        setStatus("☁️ 同期済み（" + (user.email || user.displayName || "Google") + "）・" + savedWords.length + "語");
+        syncedStatus();
       }
 
       window.LD_cloud = {
@@ -5449,7 +5467,8 @@
             auth.onAuthStateChanged(function (u) {
               if (unsub) { unsub(); unsub = null; }
               user = u;
-              show(loginBtn, !u); show(logoutBtn, !!u);
+              show(loginBtn, !u); show(logoutBtn, !!u); show(syncNowBtn, !!u);
+              updateInfo();
               if (u) startUserSync();
               else { ready = false; setStatus("☁️ Googleでログインすると、どの端末からでも同じ単語帳を使えます"); }
             });
@@ -5469,6 +5488,16 @@
             setStatus("☁️ ログインに失敗しました: " + (e.code || e.message));
           }
         });
+      });
+      if (syncNowBtn) syncNowBtn.addEventListener("click", function () {
+        if (!user) return;
+        document.querySelectorAll(".ld-autogrow").forEach(function (el) { if (typeof el._commit === "function") el._commit(); });
+        setStatus("☁️ 同期中…");
+        docRef().get({ source: "server" }).then(function (snap) {
+          ready = true;
+          return syncWith(snap.exists ? snap.data() : null, true);
+        }).then(function () { showToast("クラウドと同期しました"); })
+          .catch(function (e) { setStatus("☁️ 同期できませんでした（オフライン？）: " + errText(e)); });
       });
       if (logoutBtn) logoutBtn.addEventListener("click", function () {
         if (auth) auth.signOut().then(function () { showToast("ログアウトしました（この端末の単語帳はそのまま残ります）"); });
@@ -5646,8 +5675,34 @@
     })();
   </script>
 <script>
+  window.LD_APP_VERSION = '545cd175029f';
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+    // 新しい版が公開されたら、アプリを開き直さなくても切り替える
+    //  ・画面に戻ってきたとき／30分ごとに新しい版を確認
+    //  ・新しい版が有効になったら、書きかけのメモを保存・送信してから再読み込み（入力中は待つ）
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+    const reloadSafely = () => {
+      if (reloading) return;
+      const a = document.activeElement;
+      if (a && a.classList && a.classList.contains('ld-autogrow')) {
+        a.addEventListener('blur', () => setTimeout(reloadSafely, 300), { once: true });
+        return;
+      }
+      reloading = true;
+      document.querySelectorAll('.ld-autogrow').forEach(el => { if (typeof el._commit === 'function') el._commit(); });
+      if (window.LD_cloud) window.LD_cloud.flush();
+      try { if (typeof showToast === 'function') showToast('新しい版に更新しています…'); } catch (e) {}
+      setTimeout(() => location.reload(), 1500);
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) reloadSafely(); });
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        const check = () => reg.update().catch(() => {});
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+        setInterval(check, 30 * 60 * 1000);
+      });
+    });
   }
 </script>
 </body>
