@@ -2726,11 +2726,21 @@
         noteInput.placeholder = "メモを追記...（改行もできます）";
         noteInput.className = "ld-autogrow w-full rounded border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-sm leading-relaxed focus:outline-none focus:ring-1 focus:ring-amber-500";
         requestAnimationFrame(() => autoGrowTextarea(noteInput));
-        noteInput.addEventListener("change", () => {
-          savedWords[index].note = noteInput.value;
+        // 入力が1秒止まったら自動保存（複数行の欄は Enter で確定しないため）。欄を離れたときも保存
+        const commitNote = (withToast) => {
+          clearTimeout(noteInput._saveTimer);
+          const target = savedWords.find(w => w.strong === item.strong);
+          if (!target || target.note === noteInput.value) return;
+          target.note = noteInput.value;
           persistSavedState();
-          showToast("メモを更新しました");
+          if (withToast) showToast("メモを保存しました");
+        };
+        noteInput._commit = () => commitNote(false);
+        noteInput.addEventListener("input", () => {
+          clearTimeout(noteInput._saveTimer);
+          noteInput._saveTimer = setTimeout(() => commitNote(false), 1000);
         });
+        noteInput.addEventListener("change", () => commitNote(true));
 
         const footerBtns = document.createElement("div");
         footerBtns.className = "flex items-center justify-between pt-1";
@@ -4157,6 +4167,25 @@
         toggleSaveWord(w);
       });
 
+      // 単語帳に入っている語のメモは、入力が1秒止まったら自動保存（まだ単語帳にない語は「メモ保存」で追加）
+      const inspNote = document.getElementById("wordPersonalNote");
+      const commitInspectorNote = () => {
+        clearTimeout(inspNote._saveTimer);
+        const w = window._currentInspectedWord;
+        if (!w) return;
+        const target = savedWords.find(item => item.strong === w.strong);
+        const val = inspNote.value.trim();
+        if (!target || target.note === val) return;
+        target.note = val;
+        persistSavedState();
+      };
+      inspNote._commit = commitInspectorNote;
+      inspNote.addEventListener("input", () => {
+        clearTimeout(inspNote._saveTimer);
+        inspNote._saveTimer = setTimeout(commitInspectorNote, 1000);
+      });
+      inspNote.addEventListener("blur", commitInspectorNote);
+
       document.getElementById("saveNoteBtn").addEventListener("click", () => {
         const w = window._currentInspectedWord;
         if (!w) return;
@@ -5244,7 +5273,7 @@
       var statusEl = document.getElementById("cloudSyncStatus");
       var loginBtn = document.getElementById("cloudLoginBtn");
       var logoutBtn = document.getElementById("cloudLogoutBtn");
-      var auth = null, db = null, user = null, unsub = null, pushTimer = null, ready = false;
+      var auth = null, db = null, user = null, unsub = null, pushTimer = null, ready = false, lastRemote = null, pendingRender = false;
 
       function setStatus(t) { if (statusEl) statusEl.textContent = t; }
       function show(el, on) { if (el) el.classList.toggle("hidden", !on); }
@@ -5268,7 +5297,7 @@
         savedWords.forEach(function (w) {
           var j = JSON.stringify(w);
           seen[w.strong] = true;
-          if (m.last[w.strong] !== j) { m.t[w.strong] = now; m.last[w.strong] = j; delete m.del[w.strong]; }
+          if (m.last[w.strong] !== j) { m.t[w.strong] = Math.max(now, (m.t[w.strong] || 0) + 1); m.last[w.strong] = j; delete m.del[w.strong]; }
         });
         Object.keys(m.last).forEach(function (s) {
           if (!seen[s]) { m.del[s] = now; delete m.last[s]; delete m.t[s]; }
@@ -5307,9 +5336,38 @@
         savedWords.forEach(function (w) { m.last[w.strong] = JSON.stringify(w); });
         saveMeta(m);
         try { updateSavedBadge(); } catch (e) {}
+        if (isTypingNote()) { pendingRender = true; return; }
         try { renderSavedView(); } catch (e) {}
         try { renderCurrentVerse(); } catch (e) {}
       }
+
+      function isTypingNote() {
+        var a = document.activeElement;
+        return !!(a && a.classList && a.classList.contains("ld-autogrow"));
+      }
+      // 入力途中のメモを先に保存してから、クラウドの内容と合わせる
+      function commitTypingNote() {
+        var a = document.activeElement;
+        if (a && typeof a._commit === "function") a._commit();
+      }
+      document.addEventListener("focusout", function (e) {
+        if (!pendingRender || !(e.target.classList && e.target.classList.contains("ld-autogrow"))) return;
+        setTimeout(function () {
+          if (isTypingNote()) return;
+          pendingRender = false;
+          try { renderSavedView(); } catch (err) {}
+          try { renderCurrentVerse(); } catch (err) {}
+        }, 50);
+      });
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState !== "hidden") return;
+        document.querySelectorAll(".ld-autogrow").forEach(function (el) { if (typeof el._commit === "function") el._commit(); });
+        if (window.LD_cloud) window.LD_cloud.flush();
+      });
+      window.addEventListener("pagehide", function () {
+        document.querySelectorAll(".ld-autogrow").forEach(function (el) { if (typeof el._commit === "function") el._commit(); });
+        if (window.LD_cloud) window.LD_cloud.flush();
+      });
 
       function docRef() { return db.collection("users").doc(user.uid).collection("logosDabar").doc("vocab"); }
       function errText(e) {
@@ -5327,6 +5385,8 @@
       }
 
       function syncWith(remote, forceWrite) {
+        if (remote) lastRemote = remote;
+        commitTypingNote();
         var m = recordLocalChanges();
         var merged = merge(m, remote || {});
         applyLocal(merged);
@@ -5337,12 +5397,19 @@
       }
 
       window.LD_cloud = {
+        // アプリを閉じる・切り替えるときに、送信待ちの変更をすぐ送る
+        flush: function () {
+          if (!pushTimer || !user || !ready) return;
+          clearTimeout(pushTimer); pushTimer = null;
+          syncWith(lastRemote, true);
+        },
         push: function () {
           recordLocalChanges();
           if (!user || !ready) return;
           setStatus("☁️ 同期中…");
           clearTimeout(pushTimer);
           pushTimer = setTimeout(function () {
+            pushTimer = null;
             docRef().get().then(function (snap) { syncWith(snap.exists ? snap.data() : null, false); })
               .catch(function (e) { setStatus("☁️ 同期できませんでした（オフライン？）: " + errText(e)); });
           }, 800);
