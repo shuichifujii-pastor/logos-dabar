@@ -5410,7 +5410,17 @@
         })]);
       }
 
+      var writeLog = [], pausedUntil = 0;
       function writeRemote(merged) {
+        var now = Date.now();
+        writeLog = writeLog.filter(function (x) { return now - x < 60000; });
+        if (now < pausedUntil) { setStatus("☁️ 同期を一時停止中です（書き込みが多すぎたため）。数分後にもう一度「今すぐ同期」を押してください"); return Promise.resolve(); }
+        if (writeLog.length >= 12) {
+          pausedUntil = now + 5 * 60000;
+          setStatus("☁️ 同期を一時停止しました（1分間の書き込みが多すぎたため）。5分後に「今すぐ同期」を押してください");
+          return Promise.resolve();
+        }
+        writeLog.push(now);
         var data;
         try {
           data = { items: cloudItems(merged.items), t: merged.t, del: merged.del, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
@@ -5428,10 +5438,23 @@
         var m = recordLocalChanges();
         var merged = merge(m, remote || {});
         applyLocal(merged);
-        var same = remote && JSON.stringify(remote.items || []) === JSON.stringify(merged.items)
-          && JSON.stringify(remote.del || {}) === JSON.stringify(merged.del);
+        // 項目の並び順に左右されない形で比べる（Firestore は項目名をアルファベット順にして返すため、
+        // 文字列のまま比べると毎回「違う」と判断して書き込みが止まらなくなる）
+        var byStrong = function (arr) { return arr.slice().sort(function (x, y) { return String(x.strong) < String(y.strong) ? -1 : 1; }); };
+        var same = !!remote && canon(byStrong(cloudItems(merged.items))) === canon(byStrong(remote.items || []))
+          && canon(merged.del) === canon(remote.del || {})
+          && canon(merged.t) === canon(remote.t || {});
         if (forceWrite || !same) return writeRemote(merged);
         syncedStatus();
+      }
+
+      function canon(v) {
+        if (Array.isArray(v)) return "[" + v.map(canon).join(",") + "]";
+        if (v && typeof v === "object") {
+          return "{" + Object.keys(v).filter(function (k) { return v[k] !== undefined; }).sort()
+            .map(function (k) { return JSON.stringify(k) + ":" + canon(v[k]); }).join(",") + "}";
+        }
+        return JSON.stringify(v === undefined ? null : v);
       }
 
       window.LD_cloud = {
@@ -5699,7 +5722,7 @@
     })();
   </script>
 <script>
-  window.LD_APP_VERSION = '15521154153d';
+  window.LD_APP_VERSION = 'f8cabf137581';
   if ('serviceWorker' in navigator) {
     // 新しい版が公開されたら、アプリを開き直さなくても切り替える
     //  ・画面に戻ってきたとき／30分ごとに新しい版を確認
