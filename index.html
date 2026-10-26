@@ -345,7 +345,7 @@
           <span id="savedCountBadge" class="px-1.5 py-0.2 text-[11px] rounded-full bg-stone-700 text-amber-300">0</span>
         </button>
         <button id="tabBtnIntro" type="button" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium text-stone-300 hover:text-white transition flex items-center gap-1.5">
-          <span>📘 新約原典入門</span>
+          <span>📘 原典入門</span>
         </button>
       </nav>
     </div>
@@ -745,7 +745,7 @@
       <div id="savedListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </section>
 
-    <!-- VIEW 4: 新約聖書を原典で読むための入門 -->
+    <!-- VIEW 4: 新約・旧約聖書を原典で読むための入門 -->
     <section id="viewIntro" class="hidden space-y-4">
       <div id="introContainer" class="space-y-4"></div>
     </section>
@@ -2502,6 +2502,38 @@
         );
       });
 
+      // 収録節にない語も、聖書全巻の辞書（bible/lexicon.js）から探して加える
+      if (query) {
+        if (!LD_BIBLE.lexicon) {
+          loadBibleScript("lexicon", "bible/lexicon.js").then(() => renderLexiconView()).catch(() => {});
+        } else {
+          const rawQuery = document.getElementById("lexiconSearchInput").value.trim();
+          const keys = strongKeysForTerm(rawQuery) || lexKeysForTerm(rawQuery, false);
+          const baseOf = s => {
+            const m = /^([HG])0*(\d+)/i.exec(s || "");
+            return m ? m[1].toUpperCase() + m[2].padStart(4, "0") : s;
+          };
+          const have = new Set(filtered.map(e => baseOf(e.strong)));
+          const seen = new Set();
+          for (const k of keys) {
+            if (filtered.length >= 80) break;
+            const base = baseOf(k);
+            const lang = k[0] === "H" ? "Hebrew" : "Greek";
+            if (have.has(base) || seen.has(k)) continue;
+            if (langFilter !== "ALL" && lang !== langFilter) continue;
+            seen.add(k);
+            const e = LD_BIBLE.lexicon[k];
+            const def = e[5] || e[3] || "";
+            filtered.push({
+              strong: k, lang, lemma: e[0], lemmaTranslit: e[1] || "",
+              gloss: e[4] || e[2] || "", morph: "",
+              definition: def.length > 320 ? def.slice(0, 320) + "…" : def,
+              usages: [], linkedVerseId: null, linkedWordIndex: null
+            });
+          }
+        }
+      }
+
       const grid = document.getElementById("lexiconGrid");
       grid.innerHTML = "";
 
@@ -4149,7 +4181,7 @@
     }
   </script>
 
-  <!-- 新約聖書を原典で読むための入門（「📘 新約原典入門」タブ） -->
+  <!-- 新約・旧約聖書を原典で読むための入門（「📘 原典入門」タブ） -->
   <style>
     #introContainer details { background: #fff; border: 1px solid #e7e5e4; border-radius: 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
     #introContainer summary { cursor: pointer; padding: 14px 18px; font-weight: 700; color: #1c1917; list-style: none; display: flex; align-items: center; gap: 8px; }
@@ -4163,6 +4195,7 @@
     #introContainer th { background: #fafaf9; color: #57534e; font-weight: 600; white-space: nowrap; }
     #introContainer .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     #introContainer .gk { font-family: "Gentium Plus", "SBL Greek", "Noto Serif", "Times New Roman", serif; font-size: 1.15em; color: #1c1917; }
+    #introContainer .hb { font-family: "Noto Sans Hebrew", "SBL Hebrew", "Ezra SIL", "Arial Hebrew", "Times New Roman", serif; font-size: 1.2em; color: #1c1917; direction: rtl; unicode-bidi: isolate; }
     #introContainer .tip { background: #fffbeb; border: 1px solid #fde68a; border-radius: 0.5rem; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
     #introContainer .chip-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: #d97706; color: #fff; }
     #introContainer .chip-btn:hover { background: #f59e0b; }
@@ -4235,7 +4268,7 @@
 
       function alphabetHtml() {
         var cells = ALPHABET.map(function (a, i) {
-          return '<button type="button" class="intro-letter" data-speak="' + i + '" title="' + esc(a[4]) + 'を発音">' +
+          return '<button type="button" class="intro-letter" data-alpha="nt" data-speak="' + i + '" title="' + esc(a[4]) + 'を発音">' +
             '<span class="big gk">' + a[0] + ' ' + a[1] + '</span><span class="nm">' + a[4] + '</span><span class="snd">' + esc(a[5]) + '</span></button>';
         }).join("");
         var rows = ALPHABET.map(function (a) {
@@ -4245,34 +4278,36 @@
           '<div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 my-2">' + cells + '</div>' +
           '<div class="tip">💡 まちがえやすい文字：<span class="gk">η</span>（エータ＝長いエー。英語の n ではない）、<span class="gk">ν</span>（ニュー＝n。英語の v ではない）、<span class="gk">ρ</span>（ロー＝r。英語の p ではない）、<span class="gk">χ</span>（キー。英語の x ではない）、<span class="gk">ω</span>（オメガ＝長いオー。英語の w ではない）</div>' +
           '<div class="tbl-wrap"><table><thead><tr><th>文字</th><th>名前</th><th>音訳</th><th>音</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-          '<p class="font-semibold mt-3">🎯 文字当てクイズ</p><div id="introQuiz"></div>';
+          '<p class="font-semibold mt-3">🎯 文字当てクイズ</p><div id="introQuizNT"></div>';
       }
 
-      function quiz() {
-        var box = document.getElementById("introQuiz");
+      // 文字当てクイズ（新約＝ギリシア語、旧約＝ヘブライ語で共用）
+      function quiz(boxId, alpha) {
+        var box = document.getElementById(boxId);
         if (!box) return;
-        var ans = Math.floor(Math.random() * ALPHABET.length), opts = [ans];
-        while (opts.length < 4) { var r = Math.floor(Math.random() * ALPHABET.length); if (opts.indexOf(r) < 0) opts.push(r); }
+        var list = alpha === "ot" ? HEB : ALPHABET, cls = alpha === "ot" ? "hb" : "gk";
+        var ans = Math.floor(Math.random() * list.length), opts = [ans];
+        while (opts.length < 4) { var r = Math.floor(Math.random() * list.length); if (opts.indexOf(r) < 0) opts.push(r); }
         opts.sort(function () { return Math.random() - 0.5; });
-        box.innerHTML = '<div class="flex flex-wrap items-center gap-3"><span class="gk" style="font-size:44px;line-height:1">' + ALPHABET[ans][1] + '</span><span class="text-sm text-stone-500">この文字の名前は？</span></div>' +
-          '<div class="flex flex-wrap gap-2 mt-2">' + opts.map(function (o) { return '<button type="button" class="intro-quiz-opt" data-opt="' + o + '">' + ALPHABET[o][4] + '</button>'; }).join("") + '</div>' +
-          '<div id="introQuizMsg" class="text-sm mt-2 min-h-[1.5em]"></div>';
+        box.innerHTML = '<div class="flex flex-wrap items-center gap-3"><span class="' + cls + '" style="font-size:44px;line-height:1.2">' + list[ans][1] + '</span><span class="text-sm text-stone-500">この文字の名前は？</span></div>' +
+          '<div class="flex flex-wrap gap-2 mt-2">' + opts.map(function (o) { return '<button type="button" class="intro-quiz-opt" data-opt="' + o + '">' + list[o][4] + '</button>'; }).join("") + '</div>' +
+          '<div class="intro-quiz-msg text-sm mt-2 min-h-[1.5em]"></div>';
         box.querySelectorAll("[data-opt]").forEach(function (b) {
           b.addEventListener("click", function () {
-            var o = +b.getAttribute("data-opt"), ok = o === ans, msg = document.getElementById("introQuizMsg");
+            var o = +b.getAttribute("data-opt"), ok = o === ans, msg = box.querySelector(".intro-quiz-msg");
             b.classList.add(ok ? "ok" : "ng");
             if (ok) {
-              msg.innerHTML = "⭕ 正解！ <span class='gk'>" + ALPHABET[ans][0] + " " + ALPHABET[ans][1] + "</span> は「" + ALPHABET[ans][4] + "」（" + esc(ALPHABET[ans][5]) + "）です。";
-              speak(ans);
-              setTimeout(quiz, 1600);
+              msg.innerHTML = "⭕ 正解！ <span class='" + cls + "'>" + list[ans][0] + "</span> は「" + list[ans][4] + "」（" + esc(list[ans][5]) + "）です。";
+              speak(alpha, ans);
+              setTimeout(function () { quiz(boxId, alpha); }, 1600);
             } else msg.textContent = "❌ もう一度どうぞ";
           });
         });
       }
 
-      function speak(i) {
-        var a = ALPHABET[i];
-        if (typeof speakBiblicalText === "function") speakBiblicalText({ originalText: a[2], translitText: a[3], lang: "Greek" });
+      function speak(alpha, i) {
+        var a = (alpha === "ot" ? HEB : ALPHABET)[i];
+        if (typeof speakBiblicalText === "function") speakBiblicalText({ originalText: a[2], translitText: a[3], lang: alpha === "ot" ? "Hebrew" : "Greek" });
       }
 
       function content() {
@@ -4363,18 +4398,220 @@
         return html;
       }
 
-      var rendered = false;
+      // ===== 旧約聖書（ヘブライ語）入門 =====
+      // 22文字: [文字, 語末形つきの表示, ヘブライ語の名称, 名称の音訳, 名称のカナ, 音訳, 音の説明]
+      var HEB = [
+        ["א", "א", "אָלֶף", "alef", "アレフ", "ʾ", "それ自体は無音（母音を乗せる台）"],
+        ["בּ ב", "ב", "בֵּית", "bet", "ベート", "b／v", "点（ダゲシュ）ありは b、なしは v"],
+        ["ג", "ג", "גִּימֶל", "gimel", "ギメル", "g", "ガ行の音"],
+        ["ד", "ד", "דָּלֶת", "dalet", "ダレト", "d", "ダ行の音"],
+        ["ה", "ה", "הֵא", "he", "ヘー", "h", "ハ行の音（語末では多く無音）"],
+        ["ו", "ו", "וָו", "vav", "ヴァヴ", "v（w）", "ヴァ行。母音記号 וּ（ウ）・וֹ（オ）にもなる"],
+        ["ז", "ז", "זַיִן", "zayin", "ザイン", "z", "ザ行の音"],
+        ["ח", "ח", "חֵית", "chet", "ヘート", "ch（ḥ）", "のどの奥でこする強いハ"],
+        ["ט", "ט", "טֵית", "tet", "テート", "t（ṭ）", "タ行の音"],
+        ["י", "י", "יוֹד", "yod", "ヨード", "y", "ヤ行の音。母音記号 ִי（イー）にもなる"],
+        ["כּ כ ך", "כ ך", "כַּף", "kaf", "カフ", "k／kh", "点ありは k、なしはのどのハ。語末は ך"],
+        ["ל", "ל", "לָמֶד", "lamed", "ラメド", "l", "英語の l の音"],
+        ["מ ם", "מ ם", "מֵם", "mem", "メム", "m", "マ行の音。語末は ם"],
+        ["נ ן", "נ ן", "נוּן", "nun", "ヌン", "n", "ナ行の音。語末は ן"],
+        ["ס", "ס", "סָמֶךְ", "samekh", "サメフ", "s", "サ行の音"],
+        ["ע", "ע", "עַיִן", "ayin", "アイン", "ʿ", "のどを締める音（日本語では無音として読む）"],
+        ["פּ פ ף", "פ ף", "פֵּא", "pe", "ペー", "p／f", "点ありは p、なしは f。語末は ף"],
+        ["צ ץ", "צ ץ", "צָדִי", "tsadi", "ツァディ", "ts（ṣ）", "ツの音。語末は ץ"],
+        ["ק", "ק", "קוֹף", "qof", "コフ", "q", "のどの奥のカ"],
+        ["ר", "ר", "רֵישׁ", "resh", "レーシュ", "r", "ラ行の音"],
+        ["שׁ שׂ", "ש", "שִׁין", "shin", "シン／スィン", "sh／s", "右上に点で sh（שׁ）、左上に点で s（שׂ）"],
+        ["ת", "ת", "תָּו", "tav", "タヴ", "t", "タ行の音"]
+      ];
+
+      // 旧約聖書でよく出る語（およその出現回数）
+      var HFREQ = [
+        ["וְ", "H9002", "そして、しかし（接頭辞）", 50500], ["הַ", "H9009", "その（定冠詞・接頭辞）", 24000],
+        ["לְ", "H9005", "～に、～のために（接頭辞）", 20300], ["בְּ", "H9003", "～の中で、～によって（接頭辞）", 15600],
+        ["אֵת", "H0853", "目的語のしるし（訳さない）", 10900], ["מִן", "H4480", "～から、～より", 7600],
+        ["יְהוָה", "H3068", "主（ヤハウェ）", 6830], ["עַל", "H5921", "～の上に、～について", 5780],
+        ["אֶל", "H0413", "～へ、～に向かって", 5520], ["אֲשֶׁר", "H0834", "～ところの（関係詞）", 5500],
+        ["כֹּל", "H3605", "すべて", 5420], ["אָמַר", "H0559", "言う", 5320],
+        ["לֹא", "H3808", "～ない（否定）", 5190], ["בֵּן", "H1121", "息子、子", 4940],
+        ["כִּי", "H3588", "なぜなら、～ということ", 4490], ["הָיָה", "H1961", "～になる、ある", 3560],
+        ["עָשָׂה", "H6213", "する、造る", 2630], ["אֱלֹהִים", "H0430", "神", 2600],
+        ["בּוֹא", "H0935", "来る、入る", 2570], ["מֶלֶךְ", "H4428", "王", 2530],
+        ["יִשְׂרָאֵל", "H3478", "イスラエル", 2510], ["אֶרֶץ", "H0776", "地、国", 2500],
+        ["יוֹם", "H3117", "日", 2300], ["אִישׁ", "H0376", "人、男", 2190],
+        ["בַּיִת", "H1004", "家", 2050], ["נָתַן", "H5414", "与える", 2010],
+        ["עַם", "H5971", "民", 1870], ["יָד", "H3027", "手", 1630],
+        ["הָלַךְ", "H1980", "行く、歩む", 1550], ["דָּבָר", "H1697", "言葉、事", 1450]
+      ];
+
+      function hbAlphabetHtml() {
+        var cells = HEB.map(function (a, i) {
+          return '<button type="button" class="intro-letter" data-alpha="ot" data-speak="' + i + '" title="' + esc(a[4]) + 'を発音">' +
+            '<span class="big hb">' + a[1] + '</span><span class="nm">' + a[4] + '</span><span class="snd">' + esc(a[5]) + '</span></button>';
+        }).join("");
+        var rows = HEB.map(function (a) {
+          return "<tr><td class='hb'>" + a[0] + "</td><td>" + a[4] + "（<span class='hb'>" + a[2] + "</span>）</td><td>" + esc(a[5]) + "</td><td>" + esc(a[6]) + "</td></tr>";
+        }).join("");
+        return '<p>ヘブライ語のアルファベットは<b>22文字で、すべて子音</b>です。<b>右から左へ</b>書きます。大文字・小文字の区別はありませんが、5つの文字（<span class="hb">כ מ נ פ צ</span>）は語の最後に来ると形が変わります（語末形 <span class="hb">ך ם ן ף ץ</span>）。文字を押すと名前を発音します。</p>' +
+          '<div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 my-2" dir="rtl">' + cells + '</div>' +
+          '<div class="tip">💡 形の似た文字に注意：<span class="hb">ב／כ</span>（ベート／カフ）、<span class="hb">ד／ר</span>（ダレト／レーシュ）、<span class="hb">ה／ח／ת</span>（ヘー／ヘート／タヴ）、<span class="hb">ו／ז／ן</span>（ヴァヴ／ザイン／語末ヌン）、<span class="hb">ס／ם</span>（サメフ／語末メム）、<span class="hb">ע／צ</span>（アイン／ツァディ）。角の丸み・すき間・線の長さを見比べましょう。</div>' +
+          '<div class="tip">💡 <b>ベガドケファト</b>：<span class="hb">ב ג ד כ פ ת</span> の6文字は、中に点（ダゲシュ）があると「硬い音」（b, g, d, k, p, t）、ないと「柔らかい音」（v, gh, dh, kh, f, th）になります。現代の読み方では <span class="hb">ב כ פ</span> の3つだけ区別すれば十分です。</div>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>文字</th><th>名前</th><th>音訳</th><th>音</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+          '<p class="font-semibold mt-3">🎯 文字当てクイズ</p><div id="introQuizOT"></div>';
+      }
+
+      function hbVowelRow(mark, name, snd, ex) {
+        return '<tr><td class="hb" style="font-size:1.6em">' + mark + '</td><td>' + name + '</td><td>' + snd + '</td><td>' + ex + '</td></tr>';
+      }
+
+      function otContent() {
+        var html = "";
+        html += '<div class="bg-white rounded-xl border border-amber-200 p-5 shadow-sm"><h2 class="text-lg font-bold text-stone-900">📗 旧約聖書を原典（ヘブライ語）で読むための入門</h2>' +
+          '<p class="text-sm text-stone-600 mt-1 leading-relaxed">旧約聖書は、おもに<b>古代ヘブライ語</b>で書かれています（ダニエル書2:4〜7:28、エズラ記4:8〜6:18・7:12〜26、エレミヤ書10:11などの一部は<b>アラム語</b>）。もとは子音の文字だけで書かれ、6〜10世紀ごろにユダヤ人の学者（マソラ学者）が、伝承された読み方を<b>母音記号</b>として書き加えました。ここでは、原典を読み始めるために最低限知っておきたいことを順番にまとめています。例の聖句ボタンを押すと、その節を「節リーダー」で開けます。</p>' +
+          '<div class="flex flex-wrap gap-2 mt-3 text-xs"><a href="#intro-oa" class="chip-btn chip-soft">1 文字</a><a href="#intro-ob" class="chip-btn chip-soft">2 母音記号</a><a href="#intro-oc" class="chip-btn chip-soft">3 語根</a><a href="#intro-od" class="chip-btn chip-soft">4 接頭辞・接尾辞</a><a href="#intro-oe" class="chip-btn chip-soft">5 名詞</a><a href="#intro-of" class="chip-btn chip-soft">6 動詞</a><a href="#intro-og" class="chip-btn chip-soft">7 読んでみる</a><a href="#intro-oh" class="chip-btn chip-soft">8 よく出る単語</a><a href="#intro-oi" class="chip-btn chip-soft">9 学び方</a></div></div>';
+
+        html += section("intro-oa", "1．アルファベット（22文字・右から左）", hbAlphabetHtml(), true);
+
+        html += section("intro-ob", "2．母音記号（ニクダー）とその他の記号",
+          '<p>母音は、子音の<b>下・上・中</b>に付ける点や線で表します。下の表では、例として <span class="hb">ב</span>（b）に母音記号を付けています。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>記号</th><th>名前</th><th>音</th><th>例</th></tr></thead><tbody>' +
+          hbVowelRow("בַ", "パタハ", "ア（短）", "<span class='hb'>בַּת</span> バト（娘）") +
+          hbVowelRow("בָ", "カマツ", "アー（長）／ときにオ", "<span class='hb'>דָּבָר</span> ダーバール（言葉）") +
+          hbVowelRow("בֶ", "セゴール", "エ（短）", "<span class='hb'>מֶלֶךְ</span> メレク（王）") +
+          hbVowelRow("בֵ", "ツェレ", "エー（長）", "<span class='hb'>בֵּן</span> ベーン（息子）") +
+          hbVowelRow("בִ", "ヒレク", "イ", "<span class='hb'>אִישׁ</span> イーシュ（人）") +
+          hbVowelRow("בֹ／בוֹ", "ホレム", "オー", "<span class='hb'>יוֹם</span> ヨーム（日）") +
+          hbVowelRow("בֻ／בוּ", "キブツ／シュレク", "ウ", "<span class='hb'>רוּחַ</span> ルーアハ（霊・風）") +
+          hbVowelRow("בְ", "シェヴァ", "ごく短い「エ」または無音", "<span class='hb'>בְּרִית</span> ベリート（契約）") +
+          hbVowelRow("חֲ חֱ חֳ", "ハテフ（短い母音）", "ごく短いア・エ・オ", "<span class='hb'>אֱלֹהִים</span> エロヒーム（神）") +
+          '</tbody></table></div>' +
+          '<p><b>ダゲシュ</b>：文字の中の点。ベガドケファトの音を硬くするほか、子音を<b>重ねる</b>しるしにもなります（<span class="hb">הַשָּׁמַיִם</span> ハッシャーマイム「その天」）。</p>' +
+          '<p><b>マッケフ</b>：<span class="hb">־</span>（上のほうの横線）は、2つの語を1つにつなぐハイフンです（<span class="hb">כָּל־הָאָרֶץ</span> コル・ハーアーレツ「全地」）。</p>' +
+          '<p><b>アクセント記号（テアミーム）</b>：朗読の調子と、文の区切りを示す小さな記号がたくさん付いています。まずは2つだけ覚えましょう。<span class="hb">׃</span>（ソフ・パスーク）＝<b>節の終わり</b>、<span class="hb">֑</span>（アトナフ。語の下の小さな「へ」の字）＝<b>節の真ん中の大きな区切り</b>。</p>' +
+          '<div class="tip">💡 <span class="hb">יְהוָה</span>（神の御名、YHWH）は、ユダヤ教の伝統では口に出さず「<b>アドナイ</b>（主）」と読みかえます。口語訳でも「主」と訳されています。このアプリの発音も「アドナイ」で読みます。</div>');
+
+        html += section("intro-oc", "3．三つの子音の「語根」──ヘブライ語のしくみの中心",
+          '<p>ヘブライ語の単語のほとんどは、<b>3つの子音の語根</b>から作られます。語根が基本の意味を持ち、母音の付け方や、前後に付く文字によって、さまざまな単語になります。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>語根</th><th>基本の意味</th><th>そこから生まれる語</th></tr></thead><tbody>' +
+          '<tr><td class="hb">מ־ל־ך</td><td>治める</td><td><span class="hb">מָלַךְ</span> マーラク（彼は治めた）、<span class="hb">מֶלֶךְ</span> メレク（王）、<span class="hb">מַלְכָּה</span> マルカー（女王）、<span class="hb">מַמְלָכָה</span> マムラーカー（王国）</td></tr>' +
+          '<tr><td class="hb">ד־ב־ר</td><td>語る</td><td><span class="hb">דִּבֶּר</span> ディッベル（彼は語った）、<span class="hb">דָּבָר</span> ダーバール（言葉・事柄）</td></tr>' +
+          '<tr><td class="hb">ק־ד־שׁ</td><td>聖である</td><td><span class="hb">קָדוֹשׁ</span> カードーシュ（聖なる）、<span class="hb">קֹדֶשׁ</span> コーデシュ（聖さ・聖所）</td></tr>' +
+          '<tr><td class="hb">שׁ־ל־ם</td><td>完全である</td><td><span class="hb">שָׁלוֹם</span> シャーローム（平和・平安）、<span class="hb">שִׁלֵּם</span> シッレーム（償った）</td></tr></tbody></table></div>' +
+          '<div class="tip">💡 知らない単語に出会ったら、まず<b>3つの子音（語根）</b>を探しましょう。節リーダーで単語を押すと、原形（辞書の見出し語）と意味が表示されるので、語根の見当をつける練習になります。</div>');
+
+        html += section("intro-od", "4．前と後ろに付く文字（接頭辞・接尾辞）",
+          '<p>ヘブライ語では、「そして」「その」「～の中で」などの短い語が、<b>単語の頭に直接くっつきます</b>。最初に覚えておくと、辞書で引くべき形がすぐ分かるようになります。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>接頭辞</th><th>意味</th><th>例</th></tr></thead><tbody>' +
+          '<tr><td class="hb">וְ</td><td>そして、しかし</td><td><span class="hb">וְהָאָרֶץ</span> ヴェハーアーレツ「そして地は」</td></tr>' +
+          '<tr><td class="hb">הַ</td><td>その（定冠詞）</td><td><span class="hb">הַמֶּלֶךְ</span> ハンメレク「その王」（次の子音にダゲシュ）</td></tr>' +
+          '<tr><td class="hb">בְּ</td><td>～の中で、～によって</td><td><span class="hb">בְּרֵאשִׁית</span> ベレーシート「初めに」</td></tr>' +
+          '<tr><td class="hb">לְ</td><td>～に、～のために</td><td><span class="hb">לְדָוִד</span> レダーヴィド「ダビデの（ための）」</td></tr>' +
+          '<tr><td class="hb">כְּ</td><td>～のように</td><td><span class="hb">כְּאַיָּל</span> ケアイヤール「鹿のように」</td></tr>' +
+          '<tr><td class="hb">מִ</td><td>～から（מִן の短縮）</td><td><span class="hb">מִמִּצְרַיִם</span> ミンミツライム「エジプトから」</td></tr></tbody></table></div>' +
+          '<p><b>代名詞の接尾辞</b>：「わたしの」「あなたの」などは、名詞の<b>後ろ</b>に付きます。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>接尾辞</th><th>意味</th><th>例（<span class="hb">סוּס</span> 馬）</th></tr></thead><tbody>' +
+          '<tr><td class="hb">ִי</td><td>わたしの</td><td class="hb">סוּסִי</td></tr><tr><td class="hb">ְךָ</td><td>あなた（男）の</td><td class="hb">סוּסְךָ</td></tr>' +
+          '<tr><td class="hb">וֹ</td><td>彼の</td><td class="hb">סוּסוֹ</td></tr><tr><td class="hb">ָהּ</td><td>彼女の</td><td class="hb">סוּסָהּ</td></tr>' +
+          '<tr><td class="hb">ֵנוּ</td><td>わたしたちの</td><td class="hb">סוּסֵנוּ</td></tr><tr><td class="hb">ָם</td><td>彼らの</td><td class="hb">סוּסָם</td></tr></tbody></table></div>' +
+          '<p>' + ref("詩編 23:1 を開く", "詩編23:1") + ' <span class="text-xs text-stone-500"><span class="hb">רֹעִי</span> ローイー「わたしの羊飼い」に接尾辞 <span class="hb">ִי</span>（わたしの）が付いています。</span></p>');
+
+        html += section("intro-oe", "5．名詞──性・数と「連語形」",
+          '<p>ヘブライ語の名詞には、ギリシア語のような<b>格の語尾はありません</b>。役割は、語順・前置詞・目的語のしるし <span class="hb">אֵת</span> で表します。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th></th><th>単数</th><th>複数</th><th>双数（2つ1組）</th></tr></thead><tbody>' +
+          '<tr><th>男性</th><td><span class="hb">סוּס</span> スース（馬）</td><td><span class="hb">סוּסִים</span> スースィーム（‑ים）</td><td rowspan="2"><span class="hb">יָדַיִם</span> ヤーダイム（両手）、<span class="hb">עֵינַיִם</span> エーナイム（両目）（‑ַיִם）</td></tr>' +
+          '<tr><th>女性</th><td><span class="hb">תּוֹרָה</span> トーラー（教え）（‑ָה）</td><td><span class="hb">תּוֹרוֹת</span> トーロート（‑וֹת）</td></tr></tbody></table></div>' +
+          '<p><b>冠詞</b>は定冠詞 <span class="hb">הַ</span>（その）だけで、不定冠詞（ある～）はありません。</p>' +
+          '<p><b>連語形（構成形）</b>：「AのB」は、Bを前に置き、Bを短い形（連語形）にして A を後ろに続けます。日本語と語順が逆です。</p>' +
+          '<ul class="list-disc pl-6"><li><span class="hb">דְּבַר יְהוָה</span> デバル・アドナイ「主の言葉」（<span class="hb">דָּבָר</span> → 連語形 <span class="hb">דְּבַר</span>）</li><li><span class="hb">בְּנֵי יִשְׂרָאֵל</span> ベネー・イスラエル「イスラエルの子ら」（<span class="hb">בָּנִים</span> → <span class="hb">בְּנֵי</span>）</li><li><span class="hb">בֵּית לֶחֶם</span> ベート・レヘム「パンの家」＝ベツレヘム</li></ul>' +
+          '<div class="tip">💡 形容詞は名詞の<b>後ろ</b>に置き、名詞に冠詞があれば形容詞にも付けます：<span class="hb">הָאִישׁ הַטּוֹב</span> ハーイーシュ・ハットーヴ「その良い人」。</div>');
+
+        html += section("intro-of", "6．動詞──完了形・未完了形と7つの語幹",
+          '<p>動詞は<b>3つの子音の語根</b>に、母音と接頭辞・接尾辞を付けて活用します。辞書の見出しは、ふつう「<b>彼は～した</b>」（基本語幹・完了形・3人称男性単数）の形です（<span class="hb">שָׁמַר</span> シャーマル「彼は守った」）。</p>' +
+          '<p><b>完了形と未完了形</b>：ヘブライ語の動詞は「時（過去・未来）」よりも、動作を<b>完了したものとして見るか、まだ終わっていないものとして見るか</b>を表します。</p>' +
+          '<ul class="list-disc pl-6"><li><b>完了形</b>（接尾辞で人称を表す）：完了した動作、ふつう「～した」</li><li><b>未完了形</b>（接頭辞で人称を表す）：未完了・くり返し・未来、「～する、～するだろう」</li><li><b>ワウ継続未完了形</b>（<span class="hb">וַיִּ…</span>）：物語で出来事を次々に語る形。「<b>そして～した</b>」。旧約の物語で最もよく出ます（<span class="hb">וַיֹּאמֶר</span> ヴァッヨーメル「そして言った」）</li><li>そのほか、<b>命令形</b>・<b>不定詞</b>・<b>分詞</b>があります</li></ul>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>人称</th><th>完了形（<span class="hb">שָׁמַר</span> 守る）</th><th>未完了形</th></tr></thead><tbody>' +
+          '<tr><td>彼は</td><td><span class="hb">שָׁמַר</span> シャーマル「守った」</td><td><span class="hb">יִשְׁמֹר</span> イシュモール「守る（だろう）」</td></tr>' +
+          '<tr><td>彼女は</td><td><span class="hb">שָׁמְרָה</span> シャーメラー</td><td><span class="hb">תִּשְׁמֹר</span> ティシュモール</td></tr>' +
+          '<tr><td>あなた（男）は</td><td><span class="hb">שָׁמַרְתָּ</span> シャーマルター</td><td><span class="hb">תִּשְׁמֹר</span> ティシュモール</td></tr>' +
+          '<tr><td>わたしは</td><td><span class="hb">שָׁמַרְתִּי</span> シャーマルティー</td><td><span class="hb">אֶשְׁמֹר</span> エシュモール</td></tr>' +
+          '<tr><td>彼らは</td><td><span class="hb">שָׁמְרוּ</span> シャーメルー</td><td><span class="hb">יִשְׁמְרוּ</span> イシュメルー</td></tr>' +
+          '<tr><td>わたしたちは</td><td><span class="hb">שָׁמַרְנוּ</span> シャーマルヌー</td><td><span class="hb">נִשְׁמֹר</span> ニシュモール</td></tr></tbody></table></div>' +
+          '<p><b>7つの語幹（ビンヤン）</b>：同じ語根でも、形を変えることで意味の方向が変わります。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>語幹</th><th>おもな意味</th><th>例</th></tr></thead><tbody>' +
+          '<tr><td>カル（基本）</td><td>基本の意味</td><td><span class="hb">שָׁבַר</span> 壊した</td></tr>' +
+          '<tr><td>ニファル</td><td>受け身・自分を～する</td><td><span class="hb">נִשְׁבַּר</span> 壊れた・壊された</td></tr>' +
+          '<tr><td>ピエル</td><td>強調・くり返し・～させる</td><td><span class="hb">שִׁבֵּר</span> 打ち砕いた</td></tr>' +
+          '<tr><td>プアル</td><td>ピエルの受け身</td><td><span class="hb">שֻׁבַּר</span> 打ち砕かれた</td></tr>' +
+          '<tr><td>ヒフイル</td><td>～させる（使役）</td><td><span class="hb">הִמְלִיךְ</span> 王にした（<span class="hb">מָלַךְ</span> 治めた から）</td></tr>' +
+          '<tr><td>ホフアル</td><td>ヒフイルの受け身</td><td><span class="hb">הָמְלַךְ</span> 王にされた</td></tr>' +
+          '<tr><td>ヒトパエル</td><td>自分を～する・互いに～する</td><td><span class="hb">הִתְפַּלֵּל</span> 祈った（自らをとりなす）</td></tr></tbody></table></div>' +
+          '<div class="tip">💡 節リーダーで動詞を押すと、「品詞・文法パース」に語幹・完了／未完了・人称・性・数が表示され、「🔰 やさしい文法解説」で意味が説明されます。物語では、まず <span class="hb">וַיִּ…</span>（そして～した）を見つけるのが読むコツです。</div>');
+
+        html += section("intro-og", "7．実際に読んでみる──創世記1:1",
+          '<p class="hb" style="font-size:1.6em;line-height:1.9;text-align:right">בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ׃</p>' +
+          '<p class="text-xs text-stone-500">右から左へ読みます。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>原語</th><th>読み</th><th>意味</th><th>文法のポイント</th></tr></thead><tbody>' +
+          '<tr><td class="hb">בְּרֵאשִׁית</td><td>ベレーシート</td><td>初めに</td><td>前置詞 <span class="hb">בְּ</span>（～に）＋ <span class="hb">רֵאשִׁית</span>（初め）。語根 <span class="hb">ר־א־שׁ</span>（頭）</td></tr>' +
+          '<tr><td class="hb">בָּרָא</td><td>バーラー</td><td>創造した</td><td>カル完了・3人称男性単数。この動詞の主語は聖書では神だけ</td></tr>' +
+          '<tr><td class="hb">אֱלֹהִים</td><td>エロヒーム</td><td>神</td><td>形は男性複数（‑ים）だが、動詞が単数なので「唯一の神」を指す（尊厳の複数）</td></tr>' +
+          '<tr><td class="hb">אֵת</td><td>エト</td><td>（～を）</td><td>次に来る語が直接目的語であることを示すしるし。訳さない</td></tr>' +
+          '<tr><td class="hb">הַשָּׁמַיִם</td><td>ハッシャーマイム</td><td>天</td><td>冠詞 <span class="hb">הַ</span> ＋ <span class="hb">שָׁמַיִם</span>（双数の形）。ダゲシュで <span class="hb">שׁ</span> が重なる</td></tr>' +
+          '<tr><td class="hb">וְאֵת</td><td>ヴェエト</td><td>と（～を）</td><td>接続詞 <span class="hb">וְ</span> ＋ <span class="hb">אֵת</span></td></tr>' +
+          '<tr><td class="hb">הָאָרֶץ</td><td>ハーアーレツ</td><td>地</td><td>冠詞 <span class="hb">הָ</span> ＋ <span class="hb">אֶרֶץ</span>。<span class="hb">׃</span> は節の終わり</td></tr></tbody></table></div>' +
+          '<div class="tip">💡 ヘブライ語の文は、ふつう<b>「動詞 → 主語 → 目的語」</b>の順です（<span class="hb">בָּרָא אֱלֹהִים</span>「創造した・神が」）。読み方の手順：①接頭辞（<span class="hb">ו ה ב ל כ מ</span>）を外す ②3つの子音（語根）を探す ③動詞の形（完了・未完了・<span class="hb">וַיִּ</span>）を見る ④日本語訳と比べる。</div>' +
+          '<p>' + ref("創世記 1:1 を開く", "創世記1:1") + ' ' + ref("創世記 1:3 を開く", "創世記1:3") + ' ' + ref("申命記 6:4 を開く", "申命記6:4") + '</p>' +
+          '<p class="text-sm">申命記6:4（シェマ）：<span class="hb" style="font-size:1.25em">שְׁמַע יִשְׂרָאֵל יְהוָה אֱלֹהֵינוּ יְהוָה אֶחָד׃</span><br>シェマ・イスラエル、アドナイ・エロヘーヌー、アドナイ・エハード「聞け、イスラエルよ。主はわれわれの神、主はただひとりである」。<span class="hb">שְׁמַע</span> は命令形、<span class="hb">אֱלֹהֵינוּ</span> は <span class="hb">אֱלֹהִים</span>（神）に接尾辞 <span class="hb">ֵנוּ</span>（わたしたちの）が付いた形です。</p>');
+
+        var freqRows = HFREQ.map(function (f, i) {
+          return '<tr><td>' + (i + 1) + '</td><td class="hb">' + f[0] + '</td><td>' + esc(f[2]) + '</td><td class="text-right">約' + f[3].toLocaleString() + '回</td><td><button type="button" class="chip-btn chip-soft" data-lex="' + f[1] + '">' + f[1] + '</button></td></tr>';
+        }).join("");
+        html += section("intro-oh", "8．よく出る単語30",
+          '<p>旧約聖書の語彙はおよそ8,000語ですが、上位の語が本文の大部分を占めます。特に最初の5つ（接頭辞 <span class="hb">וְ הַ לְ בְּ</span> と <span class="hb">אֵת</span>）はほとんどすべての節に出てきます。番号を押すと「原典辞書」で詳しい意味を見られます。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>#</th><th>原語</th><th>意味</th><th>出現回数</th><th>辞書</th></tr></thead><tbody>' + freqRows + '</tbody></table></div>' +
+          '<p class="text-xs text-stone-500">※ 回数は旧約聖書全体でのおよその数です。</p>');
+
+        html += section("intro-oi", "9．このアプリでの学び方とおすすめの順序",
+          '<ol class="list-decimal pl-6 space-y-1"><li><b>文字</b>：1の表とクイズで22文字に慣れます。似た文字の見分けが最初の山です。</li><li><b>母音記号</b>：2の表を見ながら、短い語を声に出して読みます。単語を押すとカナ読みと発音が出ます。</li><li><b>接頭辞を外す練習</b>：4の <span class="hb">ו ה ב ל כ מ</span> を覚えると、単語の切れ目と原形が見えてきます。</li><li><b>語根を探す</b>：単語を押して、原形（辞書の見出し語）と意味を確かめ、3つの子音を意識します。</li><li><b>動詞の形</b>：物語の <span class="hb">וַיִּ…</span>（そして～した）から慣れていきます。</li><li><b>やさしい書から読む</b>：文の短い物語（創世記・ルツ記・ヨナ書）や、なじみのある詩編がおすすめです。</li></ol>' +
+          '<p class="mt-2">はじめに読むのにおすすめの箇所：</p><div class="flex flex-wrap gap-2">' +
+          ref("創世記 1:1", "創世記1:1") + ref("創世記 12:1", "創世記12:1") + ref("出エジプト記 3:14", "出エジプト記3:14") + ref("申命記 6:4", "申命記6:4") + ref("ルツ記 1:16", "ルツ記1:16") + ref("詩編 23:1", "詩編23:1") + ref("詩編 119:105", "詩編119:105") + ref("イザヤ書 40:8", "イザヤ書40:8") + ref("ミカ書 6:8", "ミカ書6:8") +
+          '</div><div class="tip mt-3">💡 ヘブライ語は、文字と右から左への向きに慣れるまでが大変ですが、慣れると単語のしくみ（語根）がとても規則的で、覚えやすい言語です。毎日少しずつ、声に出して読みましょう。</div>');
+        return html;
+      }
+
+      var rendered = false, introLang = "nt";
+      try { if (localStorage.getItem("ld_intro_lang") === "ot") introLang = "ot"; } catch (e) {}
+
+      function renderIntroBody() {
+        var body = document.getElementById("introBody");
+        if (!body) return;
+        body.innerHTML = introLang === "ot" ? otContent() : content();
+        quiz(introLang === "ot" ? "introQuizOT" : "introQuizNT", introLang);
+        document.querySelectorAll("#introContainer [data-intro-lang]").forEach(function (b) {
+          var on = b.getAttribute("data-intro-lang") === introLang;
+          b.className = "chip-btn" + (on ? "" : " chip-soft");
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+
       window.renderIntroView = function () {
         if (rendered) return;
         var box = document.getElementById("introContainer");
         if (!box) return;
-        box.innerHTML = content();
+        box.innerHTML = '<div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold text-stone-500">どちらを学びますか：</span>' +
+          '<button type="button" data-intro-lang="nt" class="chip-btn">📘 新約聖書（ギリシア語）</button>' +
+          '<button type="button" data-intro-lang="ot" class="chip-btn chip-soft">📗 旧約聖書（ヘブライ語）</button></div>' +
+          '<div id="introBody" class="space-y-4"></div>';
         rendered = true;
-        quiz();
+        renderIntroBody();
         box.addEventListener("click", function (e) {
-          var t = e.target.closest("[data-speak],[data-goref],[data-lex],a[href^='#intro-']");
+          var t = e.target.closest("[data-intro-lang],[data-speak],[data-goref],[data-lex],a[href^='#intro-']");
           if (!t) return;
-          if (t.hasAttribute("data-speak")) speak(+t.getAttribute("data-speak"));
+          if (t.hasAttribute("data-intro-lang")) {
+            introLang = t.getAttribute("data-intro-lang");
+            try { localStorage.setItem("ld_intro_lang", introLang); } catch (err) {}
+            renderIntroBody();
+          }
+          else if (t.hasAttribute("data-speak")) speak(t.getAttribute("data-alpha"), +t.getAttribute("data-speak"));
           else if (t.hasAttribute("data-goref")) { if (window.LD_goRef) window.LD_goRef(t.getAttribute("data-goref")); }
           else if (t.hasAttribute("data-lex")) {
             var inp = document.getElementById("lexiconSearchInput");
