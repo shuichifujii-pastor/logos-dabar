@@ -330,7 +330,7 @@
       </div>
 
       <!-- Navigation Tabs -->
-      <nav class="flex items-center gap-1 bg-stone-800 p-1 rounded-lg border border-stone-700">
+      <nav class="flex flex-wrap items-center gap-1 bg-stone-800 p-1 rounded-lg border border-stone-700">
         <button id="tabBtnReader" type="button" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-amber-600 text-white transition">
           節リーダー・行間解析
         </button>
@@ -343,6 +343,9 @@
         <button id="tabBtnSaved" type="button" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium text-stone-300 hover:text-white transition flex items-center gap-1.5">
           <span>単語帳・メモ</span>
           <span id="savedCountBadge" class="px-1.5 py-0.2 text-[11px] rounded-full bg-stone-700 text-amber-300">0</span>
+        </button>
+        <button id="tabBtnIntro" type="button" class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium text-stone-300 hover:text-white transition flex items-center gap-1.5">
+          <span>📘 新約原典入門</span>
         </button>
       </nav>
     </div>
@@ -740,6 +743,11 @@
       </div>
 
       <div id="savedListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- VIEW 4: 新約聖書を原典で読むための入門 -->
+    <section id="viewIntro" class="hidden space-y-4">
+      <div id="introContainer" class="space-y-4"></div>
     </section>
 
   </main>
@@ -3009,6 +3017,12 @@
       if (tabName === "jpsearch") renderJpSearchView();
       if (tabName === "lexicon") renderLexiconView();
       if (tabName === "saved") renderSavedView();
+
+      const introSec = document.getElementById("viewIntro");
+      const btnIntro = document.getElementById("tabBtnIntro");
+      if (introSec) introSec.classList.toggle("hidden", tabName !== "intro");
+      if (btnIntro) btnIntro.className = tabName === "intro" ? activeClass : inactiveClass;
+      if (tabName === "intro" && typeof renderIntroView === "function") renderIntroView();
     }
 
     // Event Wiring (Runs immediately if DOM is already parsed, or on DOMContentLoaded)
@@ -4133,6 +4147,254 @@
     } else {
       initLogosDabarApp();
     }
+  </script>
+
+  <!-- 新約聖書を原典で読むための入門（「📘 新約原典入門」タブ） -->
+  <style>
+    #introContainer details { background: #fff; border: 1px solid #e7e5e4; border-radius: 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    #introContainer summary { cursor: pointer; padding: 14px 18px; font-weight: 700; color: #1c1917; list-style: none; display: flex; align-items: center; gap: 8px; }
+    #introContainer summary::-webkit-details-marker { display: none; }
+    #introContainer summary::after { content: "＋"; margin-left: auto; color: #b45309; font-weight: 700; }
+    #introContainer details[open] > summary::after { content: "－"; }
+    #introContainer .intro-body { padding: 0 18px 16px; font-size: 14px; line-height: 1.8; color: #44403c; }
+    #introContainer .intro-body p { margin: 0.5em 0; }
+    #introContainer table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+    #introContainer th, #introContainer td { border: 1px solid #e7e5e4; padding: 5px 7px; text-align: left; vertical-align: top; }
+    #introContainer th { background: #fafaf9; color: #57534e; font-weight: 600; white-space: nowrap; }
+    #introContainer .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #introContainer .gk { font-family: "Gentium Plus", "SBL Greek", "Noto Serif", "Times New Roman", serif; font-size: 1.15em; color: #1c1917; }
+    #introContainer .tip { background: #fffbeb; border: 1px solid #fde68a; border-radius: 0.5rem; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
+    #introContainer .chip-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: #d97706; color: #fff; }
+    #introContainer .chip-btn:hover { background: #f59e0b; }
+    #introContainer .chip-soft { background: #f5f5f4; color: #44403c; border: 1px solid #e7e5e4; }
+    #introContainer .chip-soft:hover { background: #fef3c7; }
+    .intro-letter { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border: 1px solid #e7e5e4; border-radius: 0.6rem; background: #fafaf9; min-width: 0; }
+    .intro-letter:hover { background: #fef3c7; border-color: #fcd34d; }
+    .intro-letter .big { font-size: 26px; line-height: 1.1; color: #1c1917; }
+    .intro-letter .nm { font-size: 11px; color: #b45309; font-weight: 600; margin-top: 2px; }
+    .intro-letter .snd { font-size: 10px; color: #78716c; }
+    .intro-quiz-opt { padding: 8px 12px; border-radius: 0.5rem; border: 1px solid #d6d3d1; background: #fff; font-weight: 600; font-size: 14px; }
+    .intro-quiz-opt.ok { background: #dcfce7; border-color: #16a34a; }
+    .intro-quiz-opt.ng { background: #fee2e2; border-color: #dc2626; }
+  </style>
+  <script>
+    (function () {
+      // 24文字: [大文字, 小文字, ギリシア語の名称, 名称の音訳, 名称のカナ, 音訳, 音の説明]
+      var ALPHABET = [
+        ["Α", "α", "ἄλφα", "alpha", "アルファ", "a", "ア（短いアと長いアーがある）"],
+        ["Β", "β", "βῆτα", "bēta", "ベータ", "b", "バ行の音"],
+        ["Γ", "γ", "γάμμα", "gamma", "ガンマ", "g", "ガ行。γ, κ, ξ, χ の前では「ン」（ἄγγελος アンゲロス）"],
+        ["Δ", "δ", "δέλτα", "delta", "デルタ", "d", "ダ行の音"],
+        ["Ε", "ε", "ἒ ψιλόν", "e psilon", "エプシロン", "e", "短いエ"],
+        ["Ζ", "ζ", "ζῆτα", "zēta", "ゼータ", "z", "ズ（ヅ）の音"],
+        ["Η", "η", "ἦτα", "ēta", "エータ", "ē", "長いエー"],
+        ["Θ", "θ", "θῆτα", "thēta", "テータ", "th", "英語 think の th（伝統的にはタ行で読む）"],
+        ["Ι", "ι", "ἰῶτα", "iōta", "イオタ", "i", "イ／イー"],
+        ["Κ", "κ", "κάππα", "kappa", "カッパ", "k", "カ行の音"],
+        ["Λ", "λ", "λάμβδα", "lambda", "ラムダ", "l", "英語の l の音"],
+        ["Μ", "μ", "μῦ", "mu", "ミュー", "m", "マ行の音"],
+        ["Ν", "ν", "νῦ", "nu", "ニュー", "n", "ナ行の音"],
+        ["Ξ", "ξ", "ξῖ", "xi", "クシー", "x", "クス（ks）"],
+        ["Ο", "ο", "ὂ μικρόν", "o mikron", "オミクロン", "o", "短いオ"],
+        ["Π", "π", "πῖ", "pi", "ピー", "p", "パ行の音"],
+        ["Ρ", "ρ", "ῥῶ", "rhō", "ロー", "r", "ラ行（巻き舌）。語頭では ῥ（rh）"],
+        ["Σ", "σ／ς", "σίγμα", "sigma", "シグマ", "s", "サ行。語の最後だけ ς と書く（λόγος）"],
+        ["Τ", "τ", "ταῦ", "tau", "タウ", "t", "タ行の音"],
+        ["Υ", "υ", "ὖ ψιλόν", "u psilon", "ユプシロン", "u（y）", "ユ（口をすぼめたイ）"],
+        ["Φ", "φ", "φῖ", "phi", "フィー", "ph", "ファ行（もとは強いパ）"],
+        ["Χ", "χ", "χῖ", "chi", "キー", "ch", "のどの奥のハ（Χριστός クリストス）"],
+        ["Ψ", "ψ", "ψῖ", "psi", "プシー", "ps", "プス（ps）"],
+        ["Ω", "ω", "ὦ μέγα", "ō mega", "オメガ", "ō", "長いオー"]
+      ];
+
+      // 新約聖書でよく出る語（およその出現回数）。この30語で本文の語のおよそ半分を占めます
+      var FREQ = [
+        ["ὁ, ἡ, τό", "G3588", "その（定冠詞）", 19800], ["καί", "G2532", "そして、～も", 9150],
+        ["αὐτός", "G0846", "彼、彼女、それ／自身", 5590], ["δέ", "G1161", "しかし、さて、そして", 2790],
+        ["ἐν", "G1722", "～の中で、～によって", 2750], ["εἰμί", "G1510", "～である、いる、ある", 2460],
+        ["λέγω", "G3004", "言う、話す", 2350], ["σύ（ὑμεῖς）", "G4771", "あなた（あなたがた）", 2900],
+        ["εἰς", "G1519", "～の中へ、～に向かって", 1770], ["ἐγώ（ἡμεῖς）", "G1473", "わたし（わたしたち）", 2660],
+        ["οὐ", "G3756", "～ない（否定）", 1620], ["οὗτος", "G3778", "これ、この", 1390],
+        ["θεός", "G2316", "神", 1317], ["ὅτι", "G3754", "～ということ、なぜなら", 1296],
+        ["πᾶς", "G3956", "すべての", 1243], ["μή", "G3361", "～ない（否定）", 1042],
+        ["γάρ", "G1063", "というのは、なぜなら", 1041], ["Ἰησοῦς", "G2424", "イエス", 917],
+        ["ἐκ", "G1537", "～から、～の中から", 914], ["ἐπί", "G1909", "～の上に、～に対して", 890],
+        ["κύριος", "G2962", "主", 717], ["ἔχω", "G2192", "持つ", 708],
+        ["πρός", "G4314", "～に向かって、～と共に", 700], ["γίνομαι", "G1096", "なる、起こる", 669],
+        ["διά", "G1223", "～を通して、～のゆえに", 667], ["ἵνα", "G2443", "～するために", 663],
+        ["ἀπό", "G0575", "～から", 646], ["ἀλλά", "G0235", "しかし", 638],
+        ["ἔρχομαι", "G2064", "来る、行く", 634], ["ποιέω", "G4160", "する、作る", 568]
+      ];
+
+      function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+      function ref(label, q) { return '<button type="button" class="chip-btn" data-goref="' + esc(q) + '">📖 ' + esc(label) + '</button>'; }
+
+      function section(id, title, body, open) {
+        return '<details id="' + id + '"' + (open ? " open" : "") + '><summary>' + title + '</summary><div class="intro-body">' + body + '</div></details>';
+      }
+
+      function alphabetHtml() {
+        var cells = ALPHABET.map(function (a, i) {
+          return '<button type="button" class="intro-letter" data-speak="' + i + '" title="' + esc(a[4]) + 'を発音">' +
+            '<span class="big gk">' + a[0] + ' ' + a[1] + '</span><span class="nm">' + a[4] + '</span><span class="snd">' + esc(a[5]) + '</span></button>';
+        }).join("");
+        var rows = ALPHABET.map(function (a) {
+          return "<tr><td class='gk'>" + a[0] + " " + a[1] + "</td><td>" + a[4] + "（<span class='gk'>" + a[2] + "</span>）</td><td>" + esc(a[5]) + "</td><td>" + esc(a[6]) + "</td></tr>";
+        }).join("");
+        return '<p>ギリシア語のアルファベットは24文字です。英語のアルファベットの元になった文字なので、半分ほどは見覚えがあるはずです。文字を押すと名前を発音します。</p>' +
+          '<div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 my-2">' + cells + '</div>' +
+          '<div class="tip">💡 まちがえやすい文字：<span class="gk">η</span>（エータ＝長いエー。英語の n ではない）、<span class="gk">ν</span>（ニュー＝n。英語の v ではない）、<span class="gk">ρ</span>（ロー＝r。英語の p ではない）、<span class="gk">χ</span>（キー。英語の x ではない）、<span class="gk">ω</span>（オメガ＝長いオー。英語の w ではない）</div>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>文字</th><th>名前</th><th>音訳</th><th>音</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+          '<p class="font-semibold mt-3">🎯 文字当てクイズ</p><div id="introQuiz"></div>';
+      }
+
+      function quiz() {
+        var box = document.getElementById("introQuiz");
+        if (!box) return;
+        var ans = Math.floor(Math.random() * ALPHABET.length), opts = [ans];
+        while (opts.length < 4) { var r = Math.floor(Math.random() * ALPHABET.length); if (opts.indexOf(r) < 0) opts.push(r); }
+        opts.sort(function () { return Math.random() - 0.5; });
+        box.innerHTML = '<div class="flex flex-wrap items-center gap-3"><span class="gk" style="font-size:44px;line-height:1">' + ALPHABET[ans][1] + '</span><span class="text-sm text-stone-500">この文字の名前は？</span></div>' +
+          '<div class="flex flex-wrap gap-2 mt-2">' + opts.map(function (o) { return '<button type="button" class="intro-quiz-opt" data-opt="' + o + '">' + ALPHABET[o][4] + '</button>'; }).join("") + '</div>' +
+          '<div id="introQuizMsg" class="text-sm mt-2 min-h-[1.5em]"></div>';
+        box.querySelectorAll("[data-opt]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var o = +b.getAttribute("data-opt"), ok = o === ans, msg = document.getElementById("introQuizMsg");
+            b.classList.add(ok ? "ok" : "ng");
+            if (ok) {
+              msg.innerHTML = "⭕ 正解！ <span class='gk'>" + ALPHABET[ans][0] + " " + ALPHABET[ans][1] + "</span> は「" + ALPHABET[ans][4] + "」（" + esc(ALPHABET[ans][5]) + "）です。";
+              speak(ans);
+              setTimeout(quiz, 1600);
+            } else msg.textContent = "❌ もう一度どうぞ";
+          });
+        });
+      }
+
+      function speak(i) {
+        var a = ALPHABET[i];
+        if (typeof speakBiblicalText === "function") speakBiblicalText({ originalText: a[2], translitText: a[3], lang: "Greek" });
+      }
+
+      function content() {
+        var html = "";
+        html += '<div class="bg-white rounded-xl border border-amber-200 p-5 shadow-sm"><h2 class="text-lg font-bold text-stone-900">📘 新約聖書を原典（ギリシア語）で読むための入門</h2>' +
+          '<p class="text-sm text-stone-600 mt-1 leading-relaxed">新約聖書は紀元1世紀に、地中海世界の共通語だった<b>コイネー（共通）ギリシア語</b>で書かれました。ここでは、原典を読み始めるために最低限知っておきたいことを、順番にまとめています。各項目を開いて読み進め、例の聖句ボタンを押すと、その節を「節リーダー」で開いて実際の原文で確かめられます。</p>' +
+          '<div class="flex flex-wrap gap-2 mt-3 text-xs"><a href="#intro-a" class="chip-btn chip-soft">1 文字</a><a href="#intro-b" class="chip-btn chip-soft">2 記号</a><a href="#intro-c" class="chip-btn chip-soft">3 名詞と格</a><a href="#intro-d" class="chip-btn chip-soft">4 冠詞</a><a href="#intro-e" class="chip-btn chip-soft">5 動詞</a><a href="#intro-f" class="chip-btn chip-soft">6 読んでみる</a><a href="#intro-g" class="chip-btn chip-soft">7 よく出る単語</a><a href="#intro-h" class="chip-btn chip-soft">8 学び方</a></div></div>';
+
+        html += section("intro-a", "1．アルファベット（24文字）", alphabetHtml(), true);
+
+        html += section("intro-b", "2．母音・二重母音と記号（気息記号・アクセント・句読点）",
+          '<p><b>母音</b>は <span class="gk">α ε η ι ο υ ω</span> の7つです。<span class="gk">ε／η</span> はエの短・長、<span class="gk">ο／ω</span> はオの短・長の組です。</p>' +
+          '<p><b>二重母音</b>（2文字で1つの音）</p><div class="tbl-wrap"><table><thead><tr><th>つづり</th><th>読み</th><th>例</th></tr></thead><tbody>' +
+          '<tr><td class="gk">αι</td><td>アイ</td><td><span class="gk">καί</span> カイ（そして）</td></tr>' +
+          '<tr><td class="gk">ει</td><td>エイ</td><td><span class="gk">εἰμί</span> エイミ（～である）</td></tr>' +
+          '<tr><td class="gk">οι</td><td>オイ</td><td><span class="gk">οἶκος</span> オイコス（家）</td></tr>' +
+          '<tr><td class="gk">ου</td><td>ウー</td><td><span class="gk">οὐρανός</span> ウーラノス（天）</td></tr>' +
+          '<tr><td class="gk">αυ</td><td>アウ</td><td><span class="gk">αὐτός</span> アウトス（彼）</td></tr>' +
+          '<tr><td class="gk">ευ</td><td>エウ</td><td><span class="gk">εὐαγγέλιον</span> エウアンゲリオン（福音）</td></tr>' +
+          '<tr><td class="gk">υι</td><td>ユイ</td><td><span class="gk">υἱός</span> ヒュイオス（子）</td></tr></tbody></table></div>' +
+          '<p><b>気息記号</b>：母音で始まる語の頭に必ずつきます。</p><ul class="list-disc pl-6"><li><span class="gk">ἁ</span>（左向き・<b>有気</b>）…前に「h」をつけて読む：<span class="gk">ἁμαρτία</span> ハマルティア（罪）</li><li><span class="gk">ἀ</span>（右向き・<b>無気</b>）…何もつけない：<span class="gk">ἀγάπη</span> アガペー（愛）</li><li>語頭の <span class="gk">ῥ</span> と <span class="gk">ὑ</span> は必ず有気です：<span class="gk">ῥῆμα</span> レーマ（言葉）、<span class="gk">ὑμεῖς</span> ヒュメイス（あなたがた）</li></ul>' +
+          '<p><b>アクセント</b>：<span class="gk">ά</span>（鋭）、<span class="gk">ὰ</span>（重）、<span class="gk">ᾶ</span>（曲）の3種類。読むときは「その音節を強く読む」と考えれば十分です。まれに意味を区別します（<span class="gk">τίς</span>「だれが？」／<span class="gk">τις</span>「ある人」）。</p>' +
+          '<p><b>下書きのイオタ</b>：<span class="gk">ᾳ ῃ ῳ</span> の下の小さな点は、もともと ι があった名残りで、発音しません（<span class="gk">ἐν ἀρχῇ</span> エン・アルケー）。</p>' +
+          '<p><b>句読点</b>：<span class="gk">,</span> と <span class="gk">.</span> は日本語の読点・句点と同じ。<span class="gk">·</span>（上の点）はセミコロンやコロン、<span class="gk">;</span> は<b>疑問符（？）</b>です。</p>' +
+          '<div class="tip">💡 このアプリでは、単語を押すと音訳（例 logos）とカナ読み（ロゴス）が表示され、発音も聞けます。最初はカナを頼りに、声に出して読む練習をしましょう。</div>');
+
+        html += section("intro-c", "3．名詞と「格」──語尾が役割を示す",
+          '<p>ギリシア語では、名詞の<b>語尾</b>が変わることで、文の中での役割（だれが・だれの・だれに・だれを）を表します。これを<b>格</b>といいます。日本語の「が・の・に・を」という助詞が、語の後ろにくっついているイメージです。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>格</th><th>おもな働き</th><th>日本語のたとえ</th><th><span class="gk">λόγος</span>（言葉）単数</th><th>複数</th></tr></thead><tbody>' +
+          '<tr><td>主格</td><td>主語</td><td>～が・～は</td><td class="gk">λόγος</td><td class="gk">λόγοι</td></tr>' +
+          '<tr><td>属格</td><td>所有・出どころ</td><td>～の・～から</td><td class="gk">λόγου</td><td class="gk">λόγων</td></tr>' +
+          '<tr><td>与格</td><td>間接目的・手段・場所</td><td>～に・～で</td><td class="gk">λόγῳ</td><td class="gk">λόγοις</td></tr>' +
+          '<tr><td>対格</td><td>直接目的</td><td>～を</td><td class="gk">λόγον</td><td class="gk">λόγους</td></tr>' +
+          '<tr><td>呼格</td><td>呼びかけ</td><td>～よ</td><td class="gk">λόγε</td><td class="gk">λόγοι</td></tr></tbody></table></div>' +
+          '<p>名詞には<b>性</b>（男性・女性・中性）と<b>数</b>（単数・複数）もあります。性は文法上の区別で、実際の男女とは関係ないことも多いです（<span class="gk">ἀγάπη</span> 愛＝女性、<span class="gk">πνεῦμα</span> 霊＝中性）。</p>' +
+          '<p>語尾の形は大きく3つのグループ（変化型）に分かれます：<b>第1変化</b>（多くは女性、-η／-α：<span class="gk">ἀγάπη, ἡμέρα</span>）、<b>第2変化</b>（多くは男性 -ος、中性 -ον：<span class="gk">λόγος, ἔργον</span>）、<b>第3変化</b>（いろいろな形：<span class="gk">σάρξ, πνεῦμα, πατήρ</span>）。</p>' +
+          '<div class="tip">💡 語順が自由なのは、語尾で役割がわかるからです。<span class="gk">θεὸς ἀγάπη ἐστίν</span>（神は愛である、1ヨハネ4:8）。読むときは、まず<b>主格（主語）と動詞</b>を探すのがコツです。</div>' +
+          '<p>' + ref("1ヨハネ 4:8 を開く", "1ヨハネ4:8") + '</p>');
+
+        html += section("intro-d", "4．冠詞 ὁ, ἡ, τό（「その」）",
+          '<p>ギリシア語には定冠詞（英語の the にあたる）があり、名詞と同じ<b>性・数・格</b>で変化します。新約聖書で最も多く出る語（約2万回）です。不定冠詞（a, an）はありません。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th></th><th>男性</th><th>女性</th><th>中性</th><th>男性複数</th><th>女性複数</th><th>中性複数</th></tr></thead><tbody>' +
+          '<tr><th>主格</th><td class="gk">ὁ</td><td class="gk">ἡ</td><td class="gk">τό</td><td class="gk">οἱ</td><td class="gk">αἱ</td><td class="gk">τά</td></tr>' +
+          '<tr><th>属格</th><td class="gk">τοῦ</td><td class="gk">τῆς</td><td class="gk">τοῦ</td><td class="gk">τῶν</td><td class="gk">τῶν</td><td class="gk">τῶν</td></tr>' +
+          '<tr><th>与格</th><td class="gk">τῷ</td><td class="gk">τῇ</td><td class="gk">τῷ</td><td class="gk">τοῖς</td><td class="gk">ταῖς</td><td class="gk">τοῖς</td></tr>' +
+          '<tr><th>対格</th><td class="gk">τόν</td><td class="gk">τήν</td><td class="gk">τό</td><td class="gk">τούς</td><td class="gk">τάς</td><td class="gk">τά</td></tr></tbody></table></div>' +
+          '<div class="tip">💡 冠詞は名詞の「名札」です。名詞の語尾がわかりにくいときも、前の冠詞を見れば性・数・格の見当がつきます。この表を覚えるのが、文法の第一歩としていちばん役に立ちます。</div>');
+
+        html += section("intro-e", "5．動詞──人称・時制・態・法",
+          '<p>動詞は語尾で「だれが」（<b>人称と数</b>）を表すので、主語が書かれないことがよくあります。<span class="gk">λέγω</span> だけで「わたしは言う」です。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th></th><th>単数</th><th>複数</th></tr></thead><tbody>' +
+          '<tr><th>1人称</th><td><span class="gk">λύω</span> わたしは解く</td><td><span class="gk">λύομεν</span> わたしたちは解く</td></tr>' +
+          '<tr><th>2人称</th><td><span class="gk">λύεις</span> あなたは解く</td><td><span class="gk">λύετε</span> あなたがたは解く</td></tr>' +
+          '<tr><th>3人称</th><td><span class="gk">λύει</span> 彼（彼女）は解く</td><td><span class="gk">λύουσι(ν)</span> 彼らは解く</td></tr></tbody></table></div>' +
+          '<p><b>時制</b>：時（いつ）だけでなく、動作を<b>どう見ているか</b>（継続か、一回のまとまりか、結果が残っているか）を表すのが特徴です。</p>' +
+          '<ul class="list-disc pl-6"><li><b>現在</b>：今していること、くり返し・継続（～している）</li><li><b>未完了</b>：過去に続いていたこと（～していた）</li><li><b>未来</b>：これから（～するだろう）</li><li><b>アオリスト</b>：動作を一つのまとまりとして見る、ふつうの過去（～した）。新約で最もよく使われる過去の形です</li><li><b>完了</b>：過去の出来事の結果が今も続いている（～してしまっている）。<span class="gk">γέγραπται</span>「（今も有効に）書かれている」</li><li><b>過去完了</b>：過去のある時点までに完了していた</li></ul>' +
+          '<p><b>態</b>：<b>能動態</b>（～する）、<b>受動態</b>（～される）、<b>中動態</b>（自分のために・自分に対して～する）。中動態の形で能動の意味になる動詞（<b>異態動詞</b>）もあります（<span class="gk">ἔρχομαι</span> 来る）。</p>' +
+          '<p><b>法</b>：<b>直説法</b>（事実を述べる）、<b>接続法</b>（～しよう、～するために、もし～なら）、<b>命令法</b>（～せよ）、<b>希求法</b>（願い。まれ）。さらに動詞から作る<b>不定詞</b>（～すること）と<b>分詞</b>（～している人、～しながら）があります。分詞は新約で非常に多く使われます。</p>' +
+          '<div class="tip">💡 節リーダーで動詞を押すと、「品詞・文法パース」に時制・態・法・人称・数が表示され、「🔰 やさしい文法解説」でその意味が説明されます。最初は表を暗記するより、実際の節で「これはアオリストだから『～した』」と確かめていくのがおすすめです。</div>' +
+          '<p>' + ref("ヨハネ 3:16 を開く", "ヨハネ3:16") + ' <span class="text-xs text-stone-500"><span class="gk">ἠγάπησεν</span>（愛された＝アオリスト）、<span class="gk">ἔδωκεν</span>（与えた）、<span class="gk">πιστεύων</span>（信じる者＝分詞）を探してみましょう。</span></p>');
+
+        html += section("intro-f", "6．実際に読んでみる──ヨハネ1:1",
+          '<p class="gk" style="font-size:1.35em;line-height:1.7">Ἐν ἀρχῇ ἦν ὁ λόγος, καὶ ὁ λόγος ἦν πρὸς τὸν θεόν, καὶ θεὸς ἦν ὁ λόγος.</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>原語</th><th>読み</th><th>意味</th><th>文法のポイント</th></tr></thead><tbody>' +
+          '<tr><td class="gk">Ἐν</td><td>エン</td><td>～の中に</td><td>前置詞。後ろに与格をとる</td></tr>' +
+          '<tr><td class="gk">ἀρχῇ</td><td>アルケー</td><td>初め</td><td>名詞・女性・単数・与格（下書きイオタに注意）</td></tr>' +
+          '<tr><td class="gk">ἦν</td><td>エーン</td><td>～であった、いた</td><td><span class="gk">εἰμί</span> の未完了・3人称単数：ずっと「あった」</td></tr>' +
+          '<tr><td class="gk">ὁ λόγος</td><td>ホ・ロゴス</td><td>そのことば</td><td>冠詞＋名詞・男性・単数・主格＝主語</td></tr>' +
+          '<tr><td class="gk">καί</td><td>カイ</td><td>そして</td><td>接続詞</td></tr>' +
+          '<tr><td class="gk">πρὸς τὸν θεόν</td><td>プロス・トン・テオン</td><td>神と共に</td><td><span class="gk">πρός</span>＋対格。「神に向かって（向き合って）」というニュアンス</td></tr>' +
+          '<tr><td class="gk">θεὸς ἦν ὁ λόγος</td><td>テオス・エーン・ホ・ロゴス</td><td>ことばは神であった</td><td>冠詞のある <span class="gk">ὁ λόγος</span> が主語、冠詞のない <span class="gk">θεός</span> が述語（ことばの本質が神であることを表す）</td></tr></tbody></table></div>' +
+          '<div class="tip">💡 読み方の手順：①文字を声に出して読む ②冠詞と語尾から主格（主語）を見つける ③動詞の人称・時制を確かめる ④前置詞と、それに続く格を見る ⑤日本語訳と比べる。</div>' +
+          '<p>' + ref("ヨハネ 1:1 を開く", "ヨハネ1:1") + ' ' + ref("マルコ 1:1 を開く", "マルコ1:1") + '</p>');
+
+        var freqRows = FREQ.map(function (f, i) {
+          return '<tr><td>' + (i + 1) + '</td><td class="gk">' + f[0] + '</td><td>' + esc(f[2]) + '</td><td class="text-right">約' + f[3].toLocaleString() + '回</td><td><button type="button" class="chip-btn chip-soft" data-lex="' + f[1] + '">' + f[1] + '</button></td></tr>';
+        }).join("");
+        html += section("intro-g", "7．よく出る単語30",
+          '<p>新約聖書の語彙はおよそ5,400語ですが、<b>よく出る上位の語だけで本文のかなりの部分</b>を占めます。下の30語で本文の語のおよそ半分、50回以上出る約300語を覚えると、本文の約8割の語がわかるようになります。番号を押すと「原典辞書」で詳しい意味を見られます。</p>' +
+          '<div class="tbl-wrap"><table><thead><tr><th>#</th><th>原語</th><th>意味</th><th>出現回数</th><th>辞書</th></tr></thead><tbody>' + freqRows + '</tbody></table></div>' +
+          '<p class="text-xs text-stone-500">※ 回数は新約聖書全体でのおよその数です。</p>');
+
+        html += section("intro-h", "8．このアプリでの学び方とおすすめの順序",
+          '<ol class="list-decimal pl-6 space-y-1"><li><b>文字と発音</b>：まず1の表とクイズで24文字に慣れます（1〜2週間、毎日数分）。</li><li><b>短い節を声に出して読む</b>：節リーダーの「🔊 節全体を朗読」「▶ 1語ずつ順番に再生」でまねて読みます。</li><li><b>単語を押して調べる</b>：意味・原形・文法パース・やさしい文法解説が出ます。気になった語は「＋ 単語帳に保存」。</li><li><b>冠詞の表を覚える</b>：4の表を覚えると、格がぐっと見えるようになります。</li><li><b>よく出る単語</b>：7の30語から始めて、少しずつ増やします。</li><li><b>やさしい書から読む</b>：文がやさしいヨハネの福音書・ヨハネの手紙、マルコの福音書がおすすめです。</li></ol>' +
+          '<p class="mt-2">はじめに読むのにおすすめの箇所：</p><div class="flex flex-wrap gap-2">' +
+          ref("ヨハネ 1:1", "ヨハネ1:1") + ref("ヨハネ 3:16", "ヨハネ3:16") + ref("ヨハネ 14:6", "ヨハネ14:6") + ref("1ヨハネ 1:5", "1ヨハネ1:5") + ref("1ヨハネ 4:8", "1ヨハネ4:8") + ref("マルコ 1:1", "マルコ1:1") + ref("マタイ 5:3", "マタイ5:3") + ref("ローマ 8:28", "ローマ8:28") +
+          '</div><div class="tip mt-3">💡 文法用語にこだわりすぎず、「たくさん読む・聞く・声に出す」ことが上達の近道です。分からないところは、このアプリの文法解説と口語訳に助けてもらいながら、少しずつ進みましょう。</div>');
+        return html;
+      }
+
+      var rendered = false;
+      window.renderIntroView = function () {
+        if (rendered) return;
+        var box = document.getElementById("introContainer");
+        if (!box) return;
+        box.innerHTML = content();
+        rendered = true;
+        quiz();
+        box.addEventListener("click", function (e) {
+          var t = e.target.closest("[data-speak],[data-goref],[data-lex],a[href^='#intro-']");
+          if (!t) return;
+          if (t.hasAttribute("data-speak")) speak(+t.getAttribute("data-speak"));
+          else if (t.hasAttribute("data-goref")) { if (window.LD_goRef) window.LD_goRef(t.getAttribute("data-goref")); }
+          else if (t.hasAttribute("data-lex")) {
+            var inp = document.getElementById("lexiconSearchInput");
+            if (inp) inp.value = t.getAttribute("data-lex");
+            if (typeof switchTab === "function") switchTab("lexicon");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } else {
+            e.preventDefault();
+            var d = document.getElementById(t.getAttribute("href").slice(1));
+            if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "start" }); }
+          }
+        });
+      };
+
+      function wire() {
+        var btn = document.getElementById("tabBtnIntro");
+        if (btn) btn.addEventListener("click", function () { if (typeof switchTab === "function") switchTab("intro"); });
+      }
+      if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", wire); else wire();
+    })();
   </script>
 
   <!-- 単語帳のクラウド同期（Googleアカウント + Firebase） -->
