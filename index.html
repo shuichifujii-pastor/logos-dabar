@@ -4259,6 +4259,8 @@
         ["ἔρχομαι", "G2064", "来る、行く", 634], ["ποιέω", "G4160", "する、作る", 568]
       ];
 
+      window.LD_INTRO_DATA = { ALPHABET: ALPHABET, FREQ: FREQ };
+
       function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
       function ref(label, q) { return '<button type="button" class="chip-btn" data-goref="' + esc(q) + '">📖 ' + esc(label) + '</button>'; }
 
@@ -4278,7 +4280,7 @@
           '<div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 my-2">' + cells + '</div>' +
           '<div class="tip">💡 まちがえやすい文字：<span class="gk">η</span>（エータ＝長いエー。英語の n ではない）、<span class="gk">ν</span>（ニュー＝n。英語の v ではない）、<span class="gk">ρ</span>（ロー＝r。英語の p ではない）、<span class="gk">χ</span>（キー。英語の x ではない）、<span class="gk">ω</span>（オメガ＝長いオー。英語の w ではない）</div>' +
           '<div class="tbl-wrap"><table><thead><tr><th>文字</th><th>名前</th><th>音訳</th><th>音</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-          '<p class="font-semibold mt-3">🎯 文字当てクイズ</p><div id="introQuizNT"></div>';
+          '<p class="mt-3"><button type="button" class="chip-btn" data-gg-mode="alpha_name">🎮 学習ゲームで文字を練習する</button></p>';
       }
 
       // 文字当てクイズ（新約＝ギリシア語、旧約＝ヘブライ語で共用）
@@ -4314,9 +4316,11 @@
         var html = "";
         html += '<div class="bg-white rounded-xl border border-amber-200 p-5 shadow-sm"><h2 class="text-lg font-bold text-stone-900">📘 新約聖書を原典（ギリシア語）で読むための入門</h2>' +
           '<p class="text-sm text-stone-600 mt-1 leading-relaxed">新約聖書は紀元1世紀に、地中海世界の共通語だった<b>コイネー（共通）ギリシア語</b>で書かれました。ここでは、原典を読み始めるために最低限知っておきたいことを、順番にまとめています。各項目を開いて読み進め、例の聖句ボタンを押すと、その節を「節リーダー」で開いて実際の原文で確かめられます。</p>' +
-          '<div class="flex flex-wrap gap-2 mt-3 text-xs"><a href="#intro-a" class="chip-btn chip-soft">1 文字</a><a href="#intro-b" class="chip-btn chip-soft">2 記号</a><a href="#intro-c" class="chip-btn chip-soft">3 名詞と格</a><a href="#intro-d" class="chip-btn chip-soft">4 冠詞</a><a href="#intro-e" class="chip-btn chip-soft">5 動詞</a><a href="#intro-f" class="chip-btn chip-soft">6 読んでみる</a><a href="#intro-g" class="chip-btn chip-soft">7 よく出る単語</a><a href="#intro-h" class="chip-btn chip-soft">8 学び方</a></div></div>';
+          '<div class="flex flex-wrap gap-2 mt-3 text-xs"><a href="#intro-game" class="chip-btn">🎮 学習ゲーム</a><a href="#intro-a" class="chip-btn chip-soft">1 文字</a><a href="#intro-b" class="chip-btn chip-soft">2 記号</a><a href="#intro-c" class="chip-btn chip-soft">3 名詞と格</a><a href="#intro-d" class="chip-btn chip-soft">4 冠詞</a><a href="#intro-e" class="chip-btn chip-soft">5 動詞</a><a href="#intro-f" class="chip-btn chip-soft">6 読んでみる</a><a href="#intro-g" class="chip-btn chip-soft">7 よく出る単語</a><a href="#intro-h" class="chip-btn chip-soft">8 学び方</a></div></div>';
 
-        html += section("intro-a", "1．アルファベット（24文字）", alphabetHtml(), true);
+        html += section("intro-game", "🎮 学習ゲーム──遊びながら文字・単語・文法を覚える", '<div id="greekGameRoot"></div>', true);
+
+        html += section("intro-a", "1．アルファベット（24文字）", alphabetHtml(), false);
 
         html += section("intro-b", "2．母音・二重母音と記号（気息記号・アクセント・句読点）",
           '<p><b>母音</b>は <span class="gk">α ε η ι ο υ ω</span> の7つです。<span class="gk">ε／η</span> はエの短・長、<span class="gk">ο／ω</span> はオの短・長の組です。</p>' +
@@ -4585,7 +4589,8 @@
         var body = document.getElementById("introBody");
         if (!body) return;
         body.innerHTML = introLang === "ot" ? otContent() : content();
-        quiz(introLang === "ot" ? "introQuizOT" : "introQuizNT", introLang);
+        if (introLang === "ot") quiz("introQuizOT", "ot");
+        else if (window.LD_GreekGame) window.LD_GreekGame.mount(document.getElementById("greekGameRoot"));
         document.querySelectorAll("#introContainer [data-intro-lang]").forEach(function (b) {
           var on = b.getAttribute("data-intro-lang") === introLang;
           b.className = "chip-btn" + (on ? "" : " chip-soft");
@@ -4604,12 +4609,17 @@
         rendered = true;
         renderIntroBody();
         box.addEventListener("click", function (e) {
-          var t = e.target.closest("[data-intro-lang],[data-speak],[data-goref],[data-lex],a[href^='#intro-']");
+          var t = e.target.closest("[data-intro-lang],[data-gg-mode],[data-speak],[data-goref],[data-lex],a[href^='#intro-']");
           if (!t) return;
           if (t.hasAttribute("data-intro-lang")) {
             introLang = t.getAttribute("data-intro-lang");
             try { localStorage.setItem("ld_intro_lang", introLang); } catch (err) {}
             renderIntroBody();
+          }
+          else if (t.hasAttribute("data-gg-mode")) {
+            var gd = document.getElementById("intro-game");
+            if (gd) { gd.open = true; gd.scrollIntoView({ behavior: "smooth", block: "start" }); }
+            if (window.LD_GreekGame) window.LD_GreekGame.start(t.getAttribute("data-gg-mode"));
           }
           else if (t.hasAttribute("data-speak")) speak(t.getAttribute("data-alpha"), +t.getAttribute("data-speak"));
           else if (t.hasAttribute("data-goref")) { if (window.LD_goRef) window.LD_goRef(t.getAttribute("data-goref")); }
@@ -4631,6 +4641,568 @@
         if (btn) btn.addEventListener("click", function () { if (typeof switchTab === "function") switchTab("intro"); });
       }
       if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", wire); else wire();
+    })();
+  </script>
+
+  <!-- ギリシア語の学習ゲーム（原典入門 → 新約 → 🎮 学習ゲーム） -->
+  <style>
+    .gg { font-size: 14px; color: #292524; }
+    /* 固定ヘッダーの下に隠れないように（--ld-head はヘッダーの高さ） */
+    #introContainer details, #greekGameRoot { scroll-margin-top: calc(var(--ld-head, 120px) + 8px); }
+    .gg .gk { font-family: "Gentium Plus", "SBL Greek", "Noto Serif", "Times New Roman", serif; }
+    .gg-dash { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; background: linear-gradient(135deg, #1c1917, #44403c); color: #fef3c7; border-radius: 0.9rem; padding: 14px 16px; }
+    .gg-lv { width: 58px; height: 58px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #fbbf24, #b45309); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #1c1917; font-weight: 800; box-shadow: 0 0 0 3px rgba(251,191,36,0.35); }
+    .gg-lv small { font-size: 9px; font-weight: 700; line-height: 1; }
+    .gg-lv b { font-size: 22px; line-height: 1; }
+    .gg-bar { height: 8px; border-radius: 9999px; background: rgba(255,255,255,0.15); overflow: hidden; }
+    .gg-bar > i { display: block; height: 100%; background: linear-gradient(90deg, #f59e0b, #fde047); border-radius: 9999px; transition: width 0.6s ease; }
+    .gg-stats { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+    .gg-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9999px; background: rgba(255,255,255,0.1); font-size: 12px; font-weight: 600; color: #fde68a; }
+    button.gg-pill:hover { background: rgba(255,255,255,0.2); }
+    .gg-stage { margin-top: 14px; }
+    .gg-stage h4 { font-size: 12px; font-weight: 700; color: #92400e; margin: 0 0 6px; letter-spacing: 0.05em; }
+    .gg-modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+    .gg-mode { text-align: left; border: 1px solid #e7e5e4; background: #fff; border-radius: 0.75rem; padding: 10px 12px; transition: transform 0.1s, box-shadow 0.15s, border-color 0.15s; }
+    .gg-mode:hover { border-color: #f59e0b; box-shadow: 0 4px 12px rgba(217,119,6,0.15); transform: translateY(-1px); }
+    .gg-mode .ic { font-size: 22px; }
+    .gg-mode .nm { font-weight: 700; font-size: 13px; color: #1c1917; margin-top: 2px; }
+    .gg-mode .ds { font-size: 11px; color: #78716c; line-height: 1.4; margin-top: 2px; }
+    .gg-mode .st { font-size: 13px; color: #f59e0b; letter-spacing: 1px; margin-top: 4px; }
+    .gg-mode .st .off { color: #d6d3d1; }
+    .gg-mode.gg-chal { background: linear-gradient(135deg, #fff7ed, #fef3c7); border-color: #fcd34d; }
+    .gg-play { border: 1px solid #e7e5e4; border-radius: 0.9rem; background: #fff; padding: 14px; }
+    .gg-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: #57534e; }
+    .gg-top .sp { flex: 1; }
+    .gg-combo { font-weight: 800; color: #ea580c; }
+    .gg-combo.hot { animation: ggpop 0.35s ease; }
+    .gg-prog { height: 6px; background: #f5f5f4; border-radius: 9999px; overflow: hidden; margin: 8px 0 12px; }
+    .gg-prog > i { display: block; height: 100%; background: #d97706; transition: width 0.3s; }
+    .gg-prog.timer > i { background: linear-gradient(90deg, #dc2626, #f59e0b); transition: width 0.25s linear; }
+    .gg-q { text-align: center; padding: 8px 0 14px; }
+    .gg-q .lead { font-size: 13px; color: #78716c; }
+    .gg-q .big { font-size: 56px; line-height: 1.15; color: #1c1917; margin-top: 4px; }
+    .gg-q .mid { font-size: 30px; line-height: 1.3; color: #1c1917; margin-top: 6px; }
+    .gg-q .txt { font-size: 20px; font-weight: 700; color: #1c1917; margin-top: 6px; }
+    .gg-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .gg-opt { min-height: 54px; padding: 8px 10px; border-radius: 0.75rem; border: 2px solid #e7e5e4; background: #fafaf9; font-weight: 700; font-size: 15px; color: #292524; transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+    .gg-opt:hover:not(:disabled) { border-color: #f59e0b; background: #fffbeb; }
+    .gg-opt:active:not(:disabled) { transform: scale(0.97); }
+    .gg-opt.gkopt { font-size: 26px; font-weight: 400; }
+    .gg-opt .key { display: inline-block; font-size: 10px; color: #a8a29e; margin-right: 4px; vertical-align: middle; font-weight: 600; }
+    .gg-opt.ok { background: #dcfce7; border-color: #16a34a; animation: ggpop 0.3s ease; }
+    .gg-opt.ng { background: #fee2e2; border-color: #dc2626; animation: ggshake 0.35s ease; }
+    .gg-opt:disabled { cursor: default; }
+    .gg-fb { min-height: 52px; margin-top: 10px; font-size: 13px; line-height: 1.6; border-radius: 0.6rem; padding: 8px 12px; }
+    .gg-fb.ok { background: #f0fdf4; color: #166534; }
+    .gg-fb.ng { background: #fef2f2; color: #991b1b; }
+    .gg-fb:empty { padding: 0; min-height: 0; }
+    .gg-xpfly { position: absolute; font-weight: 800; color: #d97706; pointer-events: none; animation: ggfly 0.9s ease forwards; }
+    .gg-btn { padding: 9px 16px; border-radius: 9999px; font-weight: 700; font-size: 13px; background: #d97706; color: #fff; }
+    .gg-btn:hover { background: #f59e0b; }
+    .gg-btn.soft { background: #f5f5f4; color: #44403c; border: 1px solid #e7e5e4; }
+    .gg-btn.soft:hover { background: #fef3c7; }
+    .gg-res { text-align: center; padding: 10px 0; }
+    .gg-res .stars { font-size: 40px; letter-spacing: 4px; }
+    .gg-res .stars .off { color: #e7e5e4; }
+    .gg-res .stars .on { color: #f59e0b; display: inline-block; animation: ggstar 0.5s ease backwards; }
+    .gg-res .score { font-size: 28px; font-weight: 800; color: #1c1917; }
+    .gg-badge { display: inline-flex; flex-direction: column; align-items: center; width: 84px; padding: 8px 4px; border-radius: 0.75rem; border: 1px solid #e7e5e4; background: #fafaf9; font-size: 10px; color: #57534e; text-align: center; line-height: 1.3; }
+    .gg-badge .bi { font-size: 26px; }
+    .gg-badge.lock { opacity: 0.35; filter: grayscale(1); }
+    .gg-badge.new { border-color: #f59e0b; background: #fffbeb; animation: ggpop 0.5s ease; }
+    .gg-miss { text-align: left; margin-top: 10px; font-size: 13px; }
+    .gg-miss li { padding: 3px 0; border-bottom: 1px dashed #e7e5e4; }
+    .gg-confetti { position: fixed; top: -12px; width: 9px; height: 14px; z-index: 60; pointer-events: none; animation: ggfall linear forwards; }
+    @keyframes ggpop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    @keyframes ggshake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    @keyframes ggfly { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-40px); } }
+    @keyframes ggstar { from { opacity: 0; transform: scale(0.2) rotate(-40deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+    @keyframes ggfall { to { transform: translateY(110vh) rotate(720deg); } }
+    @media (max-width: 420px) { .gg-q .big { font-size: 48px; } .gg-opt.gkopt { font-size: 22px; } }
+  </style>
+  <script>
+    (function () {
+      var STORE = "ld_greek_game_v1";
+      var DAILY_GOAL = 50;
+
+      // 読み・意味のクイズに使う語: [ギリシア語, カナ, 音訳, 意味]
+      var WORDS = [
+        ["λόγος", "ロゴス", "logos", "ことば"], ["θεός", "テオス", "theos", "神"], ["ἀγάπη", "アガペー", "agapē", "愛"],
+        ["κύριος", "キュリオス", "kyrios", "主"], ["Ἰησοῦς", "イエースース", "Iēsous", "イエス"], ["Χριστός", "クリストス", "Christos", "キリスト（油注がれた者）"],
+        ["πνεῦμα", "プネウマ", "pneuma", "霊・風・息"], ["πίστις", "ピスティス", "pistis", "信仰・信頼"], ["χάρις", "カリス", "charis", "恵み"],
+        ["εἰρήνη", "エイレーネー", "eirēnē", "平和・平安"], ["ζωή", "ゾーエー", "zōē", "いのち"], ["ἀλήθεια", "アレーテイア", "alētheia", "真理"],
+        ["οὐρανός", "ウーラノス", "ouranos", "天"], ["ἄνθρωπος", "アントローポス", "anthrōpos", "人・人間"], ["ἁμαρτία", "ハマルティア", "hamartia", "罪"],
+        ["δόξα", "ドクサ", "doxa", "栄光"], ["κόσμος", "コスモス", "kosmos", "世・世界"], ["ἐκκλησία", "エクレーシア", "ekklēsia", "教会・集会"],
+        ["εὐαγγέλιον", "エウアンゲリオン", "euangelion", "福音"], ["βασιλεία", "バシレイア", "basileia", "王国・御国"], ["υἱός", "ヒュイオス", "huios", "子・息子"],
+        ["πατήρ", "パテール", "patēr", "父"], ["καρδία", "カルディア", "kardia", "心"], ["φῶς", "フォース", "phōs", "光"],
+        ["ὕδωρ", "ヒュドール", "hudōr", "水"], ["ἡμέρα", "ヘーメラ", "hēmera", "日"], ["νόμος", "ノモス", "nomos", "律法"],
+        ["σάρξ", "サルクス", "sarx", "肉"], ["ψυχή", "プシュケー", "psychē", "魂・いのち"], ["ἐλπίς", "エルピス", "elpis", "希望"],
+        ["ἀδελφός", "アデルフォス", "adelphos", "兄弟"], ["μαθητής", "マテーテース", "mathētēs", "弟子"], ["ἔργον", "エルゴン", "ergon", "行い・わざ"],
+        ["ὄνομα", "オノマ", "onoma", "名"], ["ἀπόστολος", "アポストロス", "apostolos", "使徒"], ["σωτηρία", "ソーテーリア", "sōtēria", "救い"]
+      ];
+
+      // 冠詞: [形, 正しい分析の一覧]
+      var ARTICLES = [
+        ["ὁ", ["男性・単数・主格"]], ["τοῦ", ["男性・単数・属格", "中性・単数・属格"]], ["τῷ", ["男性・単数・与格", "中性・単数・与格"]],
+        ["τόν", ["男性・単数・対格"]], ["ἡ", ["女性・単数・主格"]], ["τῆς", ["女性・単数・属格"]], ["τῇ", ["女性・単数・与格"]],
+        ["τήν", ["女性・単数・対格"]], ["τό", ["中性・単数・主格", "中性・単数・対格"]], ["οἱ", ["男性・複数・主格"]],
+        ["αἱ", ["女性・複数・主格"]], ["τά", ["中性・複数・主格", "中性・複数・対格"]],
+        ["τῶν", ["男性・複数・属格", "女性・複数・属格", "中性・複数・属格"]], ["τοῖς", ["男性・複数・与格", "中性・複数・与格"]],
+        ["ταῖς", ["女性・複数・与格"]], ["τούς", ["男性・複数・対格"]], ["τάς", ["女性・複数・対格"]]
+      ];
+      var ART_LABELS = (function () { var a = []; ["男性", "女性", "中性"].forEach(function (g) { ["単数", "複数"].forEach(function (n) { ["主格", "属格", "与格", "対格"].forEach(function (c) { a.push(g + "・" + n + "・" + c); }); }); }); return a; })();
+
+      // 名詞の語尾: [形, 正しい答え, 単語の意味]
+      var NOUNS = [
+        ["λόγος", ["主格・単数"], "ことば"], ["λόγου", ["属格・単数"], "ことば"], ["λόγῳ", ["与格・単数"], "ことば"], ["λόγον", ["対格・単数"], "ことば"],
+        ["λόγε", ["呼格・単数"], "ことば"], ["λόγοι", ["主格・複数", "呼格・複数"], "ことば"], ["λόγων", ["属格・複数"], "ことば"],
+        ["λόγοις", ["与格・複数"], "ことば"], ["λόγους", ["対格・複数"], "ことば"],
+        ["ἀγάπη", ["主格・単数", "呼格・単数"], "愛"], ["ἀγάπης", ["属格・単数"], "愛"], ["ἀγάπῃ", ["与格・単数"], "愛"], ["ἀγάπην", ["対格・単数"], "愛"],
+        ["ἔργον", ["主格・単数", "対格・単数", "呼格・単数"], "わざ"], ["ἔργου", ["属格・単数"], "わざ"], ["ἔργα", ["主格・複数", "対格・複数", "呼格・複数"], "わざ"],
+        ["ἔργων", ["属格・複数"], "わざ"]
+      ];
+      var CASE_LABELS = ["主格・単数", "属格・単数", "与格・単数", "対格・単数", "呼格・単数", "主格・複数", "属格・複数", "与格・複数", "対格・複数"];
+      var CASE_HINT = { "主格": "～が・～は（主語）", "属格": "～の（所有）", "与格": "～に・～で", "対格": "～を（目的語）", "呼格": "～よ（呼びかけ）" };
+
+      // 動詞の人称: [形, 正しい答え, 訳]
+      var VERBS = [
+        ["λύω", "1人称・単数", "わたしは解く"], ["λύεις", "2人称・単数", "あなたは解く"], ["λύει", "3人称・単数", "彼（彼女）は解く"],
+        ["λύομεν", "1人称・複数", "わたしたちは解く"], ["λύετε", "2人称・複数", "あなたがたは解く"], ["λύουσι(ν)", "3人称・複数", "彼らは解く"],
+        ["λέγω", "1人称・単数", "わたしは言う"], ["λέγεις", "2人称・単数", "あなたは言う"], ["λέγει", "3人称・単数", "彼（彼女）は言う"],
+        ["λέγομεν", "1人称・複数", "わたしたちは言う"], ["λέγετε", "2人称・複数", "あなたがたは言う"], ["λέγουσι(ν)", "3人称・複数", "彼らは言う"],
+        ["πιστεύω", "1人称・単数", "わたしは信じる"], ["πιστεύεις", "2人称・単数", "あなたは信じる"], ["πιστεύει", "3人称・単数", "彼（彼女）は信じる"],
+        ["πιστεύομεν", "1人称・複数", "わたしたちは信じる"], ["πιστεύετε", "2人称・複数", "あなたがたは信じる"], ["πιστεύουσι(ν)", "3人称・複数", "彼らは信じる"]
+      ];
+      var PERSON_LABELS = ["1人称・単数", "2人称・単数", "3人称・単数", "1人称・複数", "2人称・複数", "3人称・複数"];
+
+      var MODES = [
+        { id: "alpha_name", stage: 1, ic: "🔤", nm: "文字 → 名前", ds: "ギリシア文字を見て名前を選ぶ" },
+        { id: "name_alpha", stage: 1, ic: "🔍", nm: "名前 → 文字", ds: "名前と音から文字を選ぶ" },
+        { id: "listen", stage: 1, ic: "👂", nm: "聞き取り", ds: "音を聞いて文字を選ぶ" },
+        { id: "read", stage: 2, ic: "🗣️", nm: "単語を読む", ds: "単語の正しい読み方を選ぶ" },
+        { id: "vocab", stage: 2, ic: "📖", nm: "単語 → 意味", ds: "大切な聖書の言葉の意味" },
+        { id: "vocab_rev", stage: 2, ic: "✍️", nm: "意味 → 単語", ds: "意味からギリシア語を選ぶ" },
+        { id: "article", stage: 3, ic: "🏷️", nm: "冠詞の形", ds: "ὁ, τοῦ, τήν… の性・数・格" },
+        { id: "case", stage: 3, ic: "🧩", nm: "名詞の語尾", ds: "語尾から格と数を見抜く" },
+        { id: "verb", stage: 3, ic: "⚡", nm: "動詞の人称", ds: "語尾から「だれが」を見抜く" },
+        { id: "challenge", stage: 4, ic: "🔥", nm: "60秒チャレンジ", ds: "全部の問題からミックス。何問正解できる？" }
+      ];
+      var STAGES = { 1: "ステージ1　文字と発音", 2: "ステージ2　読みと単語", 3: "ステージ3　文法の入口", 4: "腕だめし" };
+
+      var LEVELS = [
+        [0, "はじめの一歩"], [80, "アルファの弟子"], [200, "文字の読み手"], [380, "書記見習い"], [600, "写本家"],
+        [900, "コイネーの読み手"], [1300, "福音書の読み手"], [1800, "書簡の読み手"], [2400, "釈義の学徒"], [3200, "原典の達人"], [4200, "ギリシア語の教師"]
+      ];
+
+      var BADGES = [
+        { id: "first", ic: "🌱", nm: "はじめの一歩", ds: "ゲームを1回クリア" },
+        { id: "perfect", ic: "💯", nm: "全問正解", ds: "10問すべて正解" },
+        { id: "combo10", ic: "🔥", nm: "10コンボ", ds: "10問連続で正解" },
+        { id: "letters", ic: "🔤", nm: "文字マスター", ds: "ステージ1の3種類すべてで★3" },
+        { id: "words", ic: "📖", nm: "単語マスター", ds: "ステージ2の3種類すべてで★3" },
+        { id: "grammar", ic: "🧩", nm: "文法マスター", ds: "ステージ3の3種類すべてで★3" },
+        { id: "chal15", ic: "⏱️", nm: "スピードスター", ds: "60秒チャレンジで15問正解" },
+        { id: "chal25", ic: "🚀", nm: "原典ロケット", ds: "60秒チャレンジで25問正解" },
+        { id: "day3", ic: "📅", nm: "3日連続", ds: "3日続けて学習" },
+        { id: "day7", ic: "🗓️", nm: "7日連続", ds: "7日続けて学習" },
+        { id: "goal", ic: "🎯", nm: "今日の目標", ds: "1日に" + DAILY_GOAL + "XP" },
+        { id: "xp1000", ic: "🏆", nm: "1000XP", ds: "合計1000XPを獲得" }
+      ];
+
+      // ===== 保存データ =====
+      function today() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+      function yesterday() { var d = new Date(Date.now() - 864e5); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+      function load() {
+        var s = null;
+        try { s = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) {}
+        s = s || {};
+        s.xp = s.xp || 0; s.best = s.best || {}; s.stars = s.stars || {}; s.weak = s.weak || {};
+        s.badges = s.badges || []; s.streak = s.streak || 0; s.lastDay = s.lastDay || ""; s.dayXp = s.dayXp || 0;
+        s.sound = s.sound !== false; s.maxCombo = s.maxCombo || 0;
+        if (s.lastDay && s.lastDay !== today() && s.lastDay !== yesterday()) s.streak = 0;
+        if (s.lastDay !== today()) s.dayXp = 0;
+        return s;
+      }
+      function save() { try { localStorage.setItem(STORE, JSON.stringify(st)); } catch (e) {} }
+      var st = load();
+
+      function levelOf(xp) {
+        var i = 0;
+        while (i + 1 < LEVELS.length && xp >= LEVELS[i + 1][0]) i++;
+        var next = LEVELS[i + 1] ? LEVELS[i + 1][0] : null;
+        return { lv: i + 1, title: LEVELS[i][1], from: LEVELS[i][0], next: next };
+      }
+
+      // ===== 効果音（WebAudio） =====
+      var actx = null;
+      function tone(freqs, dur, type, gain) {
+        if (!st.sound) return;
+        try {
+          actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+          var t = actx.currentTime;
+          freqs.forEach(function (f, i) {
+            var o = actx.createOscillator(), g = actx.createGain();
+            o.type = type || "sine"; o.frequency.value = f;
+            g.gain.setValueAtTime(0.0001, t + i * dur);
+            g.gain.exponentialRampToValueAtTime(gain || 0.12, t + i * dur + 0.015);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + (i + 1) * dur);
+            o.connect(g); g.connect(actx.destination);
+            o.start(t + i * dur); o.stop(t + (i + 1) * dur + 0.02);
+          });
+        } catch (e) {}
+      }
+      function sfxOk(combo) { var b = 660 + Math.min(combo, 10) * 30; tone([b, b * 1.5], 0.09, "triangle"); }
+      function sfxNg() { tone([220, 165], 0.13, "sawtooth", 0.06); }
+      function sfxFanfare() { tone([523, 659, 784, 1047], 0.12, "triangle", 0.14); }
+
+      function speakGreek(orig, translit) {
+        if (typeof speakBiblicalText === "function") speakBiblicalText({ originalText: orig, translitText: translit, lang: "Greek" });
+      }
+
+      // ===== 出題 =====
+      function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+      function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+      // まちがえた問題ほど出やすく
+      function pickWeighted(n, idFn, avoid) {
+        var w = [], total = 0;
+        for (var i = 0; i < n; i++) { var x = (avoid && avoid.indexOf(i) >= 0) ? 0.15 : 1 + 2.5 * Math.min(st.weak[idFn(i)] || 0, 4); w.push(x); total += x; }
+        var r = Math.random() * total;
+        for (var k = 0; k < n; k++) { r -= w[k]; if (r <= 0) return k; }
+        return n - 1;
+      }
+      function distract(correct, pool, count, exclude) {
+        var out = [], cand = shuffle(pool.slice());
+        for (var i = 0; i < cand.length && out.length < count; i++) {
+          if (cand[i] !== correct && out.indexOf(cand[i]) < 0 && !(exclude && exclude.indexOf(cand[i]) >= 0)) out.push(cand[i]);
+        }
+        return out;
+      }
+      function makeQ(prompt, correct, wrongs, opts) {
+        opts = opts || {};
+        return { prompt: prompt, options: shuffle([correct].concat(wrongs)), correct: correct, gkOpts: !!opts.gk, id: opts.id, explain: opts.explain || "", onShow: opts.onShow, onAnswer: opts.onAnswer, review: opts.review || "" };
+      }
+
+      function gen(mode, recent) {
+        var A = (window.LD_INTRO_DATA || {}).ALPHABET || [];
+        var FREQ = (window.LD_INTRO_DATA || {}).FREQ || [];
+        var i, a, w;
+        switch (mode) {
+          case "alpha_name":
+            i = pickWeighted(A.length, function (k) { return "L" + k; }, recent); a = A[i];
+            var up = Math.random() < 0.3, glyph = up ? a[0] : a[1].split("／")[0];
+            return makeQ('<div class="lead">この文字の名前は？</div><div class="big gk">' + glyph + '</div>', a[4],
+              distract(a[4], A.map(function (x) { return x[4]; }), 3),
+              { id: "L" + i, explain: '<span class="gk">' + a[0] + " " + a[1] + "</span> ＝「" + a[4] + "」（" + esc(a[5]) + "）　" + esc(a[6]), onAnswer: function () { speakGreek(a[2], a[3]); }, review: a[0] + " " + a[1] + " ＝ " + a[4] });
+          case "name_alpha":
+            i = pickWeighted(A.length, function (k) { return "L" + k; }, recent); a = A[i];
+            var g = function (x) { return x[1].split("／")[0]; };
+            return makeQ('<div class="lead">次の名前の文字はどれ？</div><div class="txt">「' + a[4] + '」<span class="text-sm font-normal text-stone-500">（音: ' + esc(a[5]) + '）</span></div>', g(a),
+              distract(g(a), A.map(g), 3), { gk: true, id: "L" + i, explain: "「" + a[4] + "」は <span class='gk'>" + a[0] + " " + a[1] + "</span>　" + esc(a[6]), onAnswer: function () { speakGreek(a[2], a[3]); }, review: a[4] + " ＝ " + a[0] + " " + a[1] });
+          case "listen":
+            i = pickWeighted(A.length, function (k) { return "L" + k; }, recent); a = A[i];
+            var g2 = function (x) { return x[1].split("／")[0]; };
+            var play = function () { speakGreek(a[2], a[3]); };
+            return makeQ('<div class="lead">音を聞いて、その名前の文字を選ぼう</div><div class="mt-2"><button type="button" class="gg-btn" data-gg-replay>🔊 もう一度聞く</button></div>', g2(a),
+              distract(g2(a), A.map(g2), 3), { gk: true, id: "L" + i, explain: "「" + a[4] + "」＝ <span class='gk'>" + a[0] + " " + a[1] + "</span>", onShow: play, replay: play, review: a[4] + " ＝ " + a[0] + " " + a[1] });
+          case "read":
+            i = pickWeighted(WORDS.length, function (k) { return "W" + k; }, recent); w = WORDS[i];
+            return makeQ('<div class="lead">この単語の読み方は？</div><div class="mid gk">' + w[0] + '</div>', w[1],
+              distract(w[1], WORDS.map(function (x) { return x[1]; }), 3), { id: "W" + i, explain: '<span class="gk">' + w[0] + "</span>（" + w[1] + "）＝「" + esc(w[3]) + "」", onAnswer: function () { speakGreek(w[0], w[2]); }, review: w[0] + " ＝ " + w[1] });
+          case "vocab":
+          case "vocab_rev":
+            var pool = WORDS.map(function (x) { return [x[0], x[3], x[2]]; }).concat(FREQ.filter(function (f) { return f[0].indexOf(",") < 0; }).map(function (f) { return [f[0], f[2], ""]; }));
+            i = pickWeighted(pool.length, function (k) { return "V" + pool[k][0]; }, recent); w = pool[i];
+            var exp = '<span class="gk">' + w[0] + "</span> ＝「" + esc(w[1]) + "」";
+            var say = function () { if (w[2]) speakGreek(w[0], w[2]); };
+            if (mode === "vocab")
+              return makeQ('<div class="lead">意味はどれ？</div><div class="mid gk">' + w[0] + '</div>', w[1], distract(w[1], pool.map(function (x) { return x[1]; }), 3), { id: "V" + w[0], explain: exp, onAnswer: say, review: w[0] + " ＝ " + w[1] });
+            return makeQ('<div class="lead">次の意味のギリシア語は？</div><div class="txt">「' + esc(w[1]) + '」</div>', w[0], distract(w[0], pool.map(function (x) { return x[0]; }), 3), { gk: true, id: "V" + w[0], explain: exp, onAnswer: say, review: w[1] + " ＝ " + w[0] });
+          case "article":
+            i = pickWeighted(ARTICLES.length, function (k) { return "A" + k; }, recent); a = ARTICLES[i];
+            var right = a[1][Math.floor(Math.random() * a[1].length)];
+            return makeQ('<div class="lead">この冠詞の性・数・格は？</div><div class="big gk">' + a[0] + '</div>', right,
+              distract(right, ART_LABELS, 3, a[1]), { id: "A" + i, explain: '<span class="gk">' + a[0] + "</span> ＝ " + a[1].join("／") + (a[1].length > 1 ? "（どれも正しい形です）" : ""), review: a[0] + " ＝ " + a[1].join("／") });
+          case "case":
+            i = pickWeighted(NOUNS.length, function (k) { return "N" + k; }, recent); a = NOUNS[i];
+            var r2 = a[1][Math.floor(Math.random() * a[1].length)];
+            return makeQ('<div class="lead">「' + a[2] + '」のこの形は、何格・何数？</div><div class="mid gk">' + a[0] + '</div>', r2,
+              distract(r2, CASE_LABELS, 3, a[1]), { id: "N" + i, explain: '<span class="gk">' + a[0] + "</span> ＝ " + a[1].join("／") + "　（" + a[1].map(function (l) { return CASE_HINT[l.split("・")[0]]; }).filter(function (v, k, arr) { return arr.indexOf(v) === k; }).join("／") + "）", review: a[0] + " ＝ " + a[1].join("／") });
+          case "verb":
+            i = pickWeighted(VERBS.length, function (k) { return "P" + k; }, recent); a = VERBS[i];
+            return makeQ('<div class="lead">この動詞の主語はだれ？</div><div class="mid gk">' + a[0] + '</div>', a[1],
+              distract(a[1], PERSON_LABELS, 3), { id: "P" + i, explain: '<span class="gk">' + a[0] + "</span> ＝ " + a[1] + "「" + a[2] + "」", review: a[0] + " ＝ " + a[2] });
+        }
+        return null;
+      }
+
+      // ===== 画面 =====
+      var root = null, game = null, timerId = null;
+
+      function stars(n, max) { var h = ""; for (var i = 0; i < (max || 3); i++) h += i < n ? "★" : '<span class="off">★</span>'; return h; }
+
+      function dashHtml() {
+        var L = levelOf(st.xp);
+        var pct = L.next ? Math.round((st.xp - L.from) / (L.next - L.from) * 100) : 100;
+        var dayPct = Math.min(100, Math.round(st.dayXp / DAILY_GOAL * 100));
+        return '<div class="gg-dash"><div class="gg-lv"><small>Lv</small><b>' + L.lv + '</b></div>' +
+          '<div><div style="font-weight:800;font-size:15px">' + L.title + '</div>' +
+          '<div class="gg-bar mt-1"><i style="width:' + pct + '%"></i></div>' +
+          '<div style="font-size:11px;color:#d6d3d1;margin-top:3px">' + st.xp + ' XP' + (L.next ? '　次のレベルまで ' + (L.next - st.xp) + ' XP' : '　最高レベル！') + '</div></div>' +
+          '<div class="gg-stats"><span class="gg-pill">🔥 ' + st.streak + '日連続</span>' +
+          '<span class="gg-pill">🎯 今日 ' + st.dayXp + '/' + DAILY_GOAL + ' XP <span class="gg-bar" style="width:46px;display:inline-block;margin-left:4px"><i style="width:' + dayPct + '%"></i></span></span>' +
+          '<button type="button" class="gg-pill" data-gg-badges>🏅 バッジ ' + st.badges.length + '/' + BADGES.length + '</button>' +
+          '<button type="button" class="gg-pill" data-gg-sound>' + (st.sound ? "🔔 効果音オン" : "🔕 効果音オフ") + '</button></div></div>';
+      }
+
+      function home() {
+        stopTimer();
+        game = null;
+        var h = dashHtml();
+        [1, 2, 3, 4].forEach(function (sg) {
+          h += '<div class="gg-stage"><h4>' + STAGES[sg] + '</h4><div class="gg-modes">';
+          MODES.filter(function (m) { return m.stage === sg; }).forEach(function (m) {
+            var best = st.best[m.id];
+            h += '<button type="button" class="gg-mode' + (m.id === "challenge" ? " gg-chal" : "") + '" data-ggm="' + m.id + '"><div class="ic">' + m.ic + '</div><div class="nm">' + m.nm + '</div><div class="ds">' + m.ds + '</div>' +
+              '<div class="st">' + stars(st.stars[m.id] || 0) + (best !== undefined ? ' <span style="font-size:11px;color:#a8a29e;letter-spacing:0">ベスト ' + best + (m.id === "challenge" ? "問" : "/10") + '</span>' : "") + '</div></button>';
+          });
+          h += '</div></div>';
+        });
+        h += '<p class="text-xs text-stone-500 mt-3">💡 10問で1ラウンド。正解するとXP、続けて正解するとコンボボーナス。まちがえた問題は、あとで出やすくなります。パソコンでは数字キー 1〜4 でも答えられます。</p>';
+        root.innerHTML = '<div class="gg">' + h + '</div>';
+      }
+
+      function badgesView() {
+        var h = dashHtml() + '<div class="gg-stage"><h4>🏅 バッジ</h4><div class="flex flex-wrap gap-2">';
+        BADGES.forEach(function (b) {
+          var has = st.badges.indexOf(b.id) >= 0;
+          h += '<div class="gg-badge' + (has ? "" : " lock") + '"><span class="bi">' + b.ic + '</span><b>' + b.nm + '</b><span>' + b.ds + '</span></div>';
+        });
+        h += '</div></div><div class="mt-3"><button type="button" class="gg-btn soft" data-gg-home>← ゲームのトップへ</button></div>';
+        root.innerHTML = '<div class="gg">' + h + '</div>';
+      }
+
+      function start(mode, reviewIds) {
+        if (!root) return;
+        stopTimer();
+        var m = MODES.filter(function (x) { return x.id === mode; })[0];
+        if (!m) return;
+        game = { mode: mode, meta: m, n: 0, total: mode === "challenge" ? 999 : 10, score: 0, combo: 0, maxCombo: 0, xp: 0, misses: [], recent: [], q: null, answered: false, review: reviewIds || null };
+        if (mode === "challenge") { game.endAt = Date.now() + 60000; startTimer(); }
+        next();
+      }
+
+      function currentSubMode() {
+        if (game.mode !== "challenge") return game.mode;
+        var pool = ["alpha_name", "name_alpha", "read", "vocab", "vocab_rev", "article", "case", "verb"];
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      function next() {
+        if (game.mode !== "challenge" && game.n >= game.total) return finish();
+        if (game.mode === "challenge" && Date.now() >= game.endAt) return finish();
+        var sub = currentSubMode();
+        var q = null;
+        for (var tries = 0; tries < 8; tries++) {
+          q = gen(sub, game.recent);
+          if (q && (!game.q || q.id !== game.q.id)) break;
+        }
+        game.q = q; game.answered = false;
+        game.recent.push(q.id); if (game.recent.length > 4) game.recent.shift();
+        draw();
+        if (q.onShow) setTimeout(q.onShow, 250);
+        var r = root.getBoundingClientRect(), hd = document.querySelector("header");
+        var headH = hd ? hd.offsetHeight : 0;
+        if (r.top < headH) root.scrollIntoView({ block: "start" });
+      }
+
+      function draw() {
+        var q = game.q, m = game.meta;
+        var prog = game.mode === "challenge"
+          ? '<div class="gg-prog timer"><i id="ggTimer" style="width:' + Math.max(0, (game.endAt - Date.now()) / 600) + '%"></i></div>'
+          : '<div class="gg-prog"><i style="width:' + (game.n / game.total * 100) + '%"></i></div>';
+        var h = '<div class="gg"><div class="gg-play" style="position:relative">' +
+          '<div class="gg-top"><span>' + m.ic + ' <b>' + m.nm + '</b></span><span class="sp"></span>' +
+          (game.mode === "challenge" ? '<span>⏱️ <b id="ggSec">' + Math.ceil(Math.max(0, game.endAt - Date.now()) / 1000) + '</b>秒</span>' : '<span>' + (game.n + 1) + ' / ' + game.total + '</span>') +
+          '<span class="gg-combo" id="ggCombo">' + (game.combo >= 2 ? "🔥×" + game.combo : "") + '</span><span>✔ ' + game.score + '</span>' +
+          '<button type="button" class="gg-btn soft" style="padding:4px 10px;font-size:11px" data-gg-quit>やめる</button></div>' + prog +
+          '<div class="gg-q">' + q.prompt + '</div><div class="gg-opts">';
+        q.options.forEach(function (o, k) {
+          h += '<button type="button" class="gg-opt' + (q.gkOpts ? " gkopt gk" : "") + '" data-gg-opt="' + k + '"><span class="key">' + (k + 1) + '</span>' + esc(o) + '</button>';
+        });
+        h += '</div><div class="gg-fb" id="ggFb"></div><div id="ggNext" class="mt-2 text-center"></div></div></div>';
+        root.innerHTML = h;
+      }
+
+      function answer(k) {
+        if (!game || game.answered) return;
+        var q = game.q, picked = q.options[k], ok = picked === q.correct;
+        game.answered = true;
+        var btns = root.querySelectorAll("[data-gg-opt]");
+        btns.forEach(function (b, j) {
+          b.disabled = true;
+          if (q.options[j] === q.correct) b.classList.add("ok");
+          else if (j === k) b.classList.add("ng");
+        });
+        var fb = document.getElementById("ggFb");
+        if (ok) {
+          game.score++; game.combo++; game.maxCombo = Math.max(game.maxCombo, game.combo);
+          var gain = 10 + Math.min(game.combo - 1, 5) * 2;
+          game.xp += gain;
+          if (st.weak[q.id]) { st.weak[q.id]--; if (!st.weak[q.id]) delete st.weak[q.id]; }
+          sfxOk(game.combo);
+          fb.className = "gg-fb ok";
+          fb.innerHTML = "⭕ 正解！ " + (game.combo >= 3 ? "<b>" + game.combo + "コンボ！</b> " : "") + q.explain;
+          var c = document.getElementById("ggCombo"); if (c) { c.textContent = game.combo >= 2 ? "🔥×" + game.combo : ""; c.classList.add("hot"); }
+          var fly = document.createElement("span"); fly.className = "gg-xpfly"; fly.textContent = "+" + gain + " XP";
+          var pb = btns[k].getBoundingClientRect(), box = root.querySelector(".gg-play").getBoundingClientRect();
+          fly.style.left = (pb.left - box.left + pb.width / 2 - 24) + "px"; fly.style.top = (pb.top - box.top - 6) + "px";
+          root.querySelector(".gg-play").appendChild(fly);
+        } else {
+          game.combo = 0;
+          st.weak[q.id] = Math.min((st.weak[q.id] || 0) + 2, 6);
+          if (game.misses.indexOf(q.review) < 0) game.misses.push(q.review);
+          sfxNg();
+          fb.className = "gg-fb ng";
+          fb.innerHTML = "❌ 正解は「" + esc(q.correct) + "」　" + q.explain;
+          var c2 = document.getElementById("ggCombo"); if (c2) c2.textContent = "";
+        }
+        if (q.onAnswer) q.onAnswer();
+        game.n++;
+        save();
+        if (ok || game.mode === "challenge") setTimeout(function () { if (game && game.answered) next(); }, ok ? 900 : 1400);
+        else document.getElementById("ggNext").innerHTML = '<button type="button" class="gg-btn" data-gg-next>次へ →</button>';
+      }
+
+      function award(id, list) { if (st.badges.indexOf(id) < 0) { st.badges.push(id); list.push(id); } }
+
+      function finish() {
+        stopTimer();
+        var m = game.meta, isChal = game.mode === "challenge";
+        var sc = game.score, starsN;
+        if (isChal) starsN = sc >= 25 ? 3 : sc >= 15 ? 2 : sc >= 8 ? 1 : 0;
+        else starsN = sc >= 10 ? 3 : sc >= 8 ? 2 : sc >= 6 ? 1 : 0;
+        var bonus = (!isChal && sc === 10) ? 30 : 0;
+        var gained = game.xp + bonus;
+        var before = levelOf(st.xp);
+        st.xp += gained;
+        if (st.lastDay !== today()) {
+          st.streak = st.lastDay === yesterday() ? st.streak + 1 : 1;
+          st.lastDay = today(); st.dayXp = 0;
+        }
+        st.dayXp += gained;
+        var newBest = st.best[m.id] === undefined || sc > st.best[m.id];
+        if (newBest) st.best[m.id] = sc;
+        st.stars[m.id] = Math.max(st.stars[m.id] || 0, starsN);
+        st.maxCombo = Math.max(st.maxCombo, game.maxCombo);
+        var nb = [];
+        award("first", nb);
+        if (!isChal && sc === 10) award("perfect", nb);
+        if (game.maxCombo >= 10) award("combo10", nb);
+        var all3 = function (ids) { return ids.every(function (id) { return (st.stars[id] || 0) >= 3; }); };
+        if (all3(["alpha_name", "name_alpha", "listen"])) award("letters", nb);
+        if (all3(["read", "vocab", "vocab_rev"])) award("words", nb);
+        if (all3(["article", "case", "verb"])) award("grammar", nb);
+        if (isChal && sc >= 15) award("chal15", nb);
+        if (isChal && sc >= 25) award("chal25", nb);
+        if (st.streak >= 3) award("day3", nb);
+        if (st.streak >= 7) award("day7", nb);
+        if (st.dayXp >= DAILY_GOAL) award("goal", nb);
+        if (st.xp >= 1000) award("xp1000", nb);
+        save();
+        var after = levelOf(st.xp), lvUp = after.lv > before.lv;
+
+        var msg = isChal ? (sc >= 25 ? "すばらしい速さです！" : sc >= 15 ? "いい調子です！" : "くり返すほど速くなります！")
+          : (sc === 10 ? "パーフェクト！ おめでとうございます！" : sc >= 8 ? "よくできました！" : sc >= 6 ? "あと少しで満点です！" : "まちがえた問題を復習して、もう一度挑戦しましょう");
+        var h = '<div class="gg">' + dashHtml() + '<div class="gg-play mt-3"><div class="gg-res">' +
+          '<div class="text-sm text-stone-500">' + m.ic + ' ' + m.nm + '</div>' +
+          '<div class="stars">' + [0, 1, 2].map(function (i) { return i < starsN ? '<span class="on" style="animation-delay:' + (i * 0.25) + 's">★</span>' : '<span class="off">★</span>'; }).join("") + '</div>' +
+          '<div class="score">' + sc + (isChal ? ' 問正解' : ' / 10') + '</div>' +
+          '<div class="text-sm mt-1">' + msg + (newBest && st.best[m.id] > 0 ? '　<b class="text-amber-700">ベスト更新！</b>' : '') + '</div>' +
+          '<div class="mt-2 text-sm">獲得 <b class="text-amber-700">+' + gained + ' XP</b>' + (bonus ? '（満点ボーナス +' + bonus + '）' : '') + '　最大コンボ ' + game.maxCombo + '</div>' +
+          (lvUp ? '<div class="mt-2 text-base font-extrabold text-amber-700">🎉 レベルアップ！ Lv' + after.lv + '「' + after.title + '」</div>' : '');
+        if (nb.length) {
+          h += '<div class="mt-3 text-sm font-bold">新しいバッジ</div><div class="flex flex-wrap justify-center gap-2 mt-1">';
+          nb.forEach(function (id) { var b = BADGES.filter(function (x) { return x.id === id; })[0]; h += '<div class="gg-badge new"><span class="bi">' + b.ic + '</span><b>' + b.nm + '</b><span>' + b.ds + '</span></div>'; });
+          h += '</div>';
+        }
+        if (game.misses.length) {
+          h += '<div class="gg-miss"><div class="font-bold text-sm">📝 まちがえた問題（次のラウンドで出やすくなります）</div><ul>' +
+            game.misses.map(function (x) { return '<li class="gk">' + esc(x) + '</li>'; }).join("") + '</ul></div>';
+        }
+        h += '<div class="flex flex-wrap justify-center gap-2 mt-4"><button type="button" class="gg-btn" data-ggm="' + m.id + '">🔁 もう一度</button>' +
+          '<button type="button" class="gg-btn soft" data-gg-home>ほかのゲームを選ぶ</button></div></div></div></div>';
+        root.innerHTML = h;
+        if (starsN === 3 || lvUp) { sfxFanfare(); confetti(); }
+        else if (starsN > 0) tone([523, 784], 0.12, "triangle");
+        game = null;
+      }
+
+      function confetti() {
+        var colors = ["#f59e0b", "#fde047", "#16a34a", "#2563eb", "#dc2626", "#a855f7"];
+        for (var i = 0; i < 70; i++) {
+          var c = document.createElement("i");
+          c.className = "gg-confetti";
+          c.style.left = Math.random() * 100 + "vw";
+          c.style.background = colors[i % colors.length];
+          c.style.animationDuration = (1.6 + Math.random() * 1.6) + "s";
+          c.style.animationDelay = (Math.random() * 0.4) + "s";
+          c.style.borderRadius = Math.random() < 0.5 ? "2px" : "50%";
+          document.body.appendChild(c);
+          setTimeout(function (el) { return function () { el.remove(); }; }(c), 3800);
+        }
+      }
+
+      function startTimer() {
+        stopTimer();
+        timerId = setInterval(function () {
+          if (!game || game.mode !== "challenge") return stopTimer();
+          var left = game.endAt - Date.now();
+          var bar = document.getElementById("ggTimer"), sec = document.getElementById("ggSec");
+          if (bar) bar.style.width = Math.max(0, left / 600) + "%";
+          if (sec) sec.textContent = Math.ceil(Math.max(0, left) / 1000);
+          if (left <= 0) finish();
+        }, 250);
+      }
+      function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+
+      function onClick(e) {
+        var t = e.target.closest("[data-ggm],[data-gg-opt],[data-gg-next],[data-gg-quit],[data-gg-home],[data-gg-badges],[data-gg-sound],[data-gg-replay]");
+        if (!t || !root.contains(t)) return;
+        if (t.hasAttribute("data-ggm")) { start(t.getAttribute("data-ggm")); root.scrollIntoView({ behavior: "smooth", block: "start" }); }
+        else if (t.hasAttribute("data-gg-opt")) answer(+t.getAttribute("data-gg-opt"));
+        else if (t.hasAttribute("data-gg-next")) next();
+        else if (t.hasAttribute("data-gg-quit")) { if (game && game.n > 0 && game.mode !== "challenge" && !confirm("このラウンドをやめますか？（ここまでの記録は保存されません）")) return; home(); }
+        else if (t.hasAttribute("data-gg-home")) home();
+        else if (t.hasAttribute("data-gg-badges")) badgesView();
+        else if (t.hasAttribute("data-gg-sound")) { st.sound = !st.sound; save(); if (game) return; home(); }
+        else if (t.hasAttribute("data-gg-replay")) { if (game && game.q && game.q.onShow) game.q.onShow(); }
+      }
+
+      document.addEventListener("keydown", function (e) {
+        if (!game || !root || !document.body.contains(root) || root.offsetParent === null) return;
+        if (/INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ""))) return;
+        if (e.key >= "1" && e.key <= "4" && !game.answered) { e.preventDefault(); answer(+e.key - 1); }
+        else if ((e.key === "Enter" || e.key === " ") && game.answered && document.querySelector("[data-gg-next]")) { e.preventDefault(); next(); }
+      });
+
+      function setHeadVar() {
+        var hd = document.querySelector("header");
+        if (hd) document.documentElement.style.setProperty("--ld-head", hd.offsetHeight + "px");
+      }
+      setHeadVar();
+      window.addEventListener("resize", setHeadVar);
+
+      window.LD_GreekGame = {
+        mount: function (el) {
+          if (!el) return;
+          root = el;
+          if (!el._ggWired) { el.addEventListener("click", onClick); el._ggWired = true; }
+          home();
+        },
+        start: function (mode) { if (root && document.body.contains(root)) { start(mode); root.scrollIntoView({ behavior: "smooth", block: "start" }); } },
+        _state: function () { return st; },
+        _game: function () { return game; }
+      };
     })();
   </script>
 
