@@ -5390,14 +5390,34 @@
       function docRef() { return db.collection("users").doc(user.uid).collection("logosDabar").doc("vocab"); }
       function errText(e) {
         if (e && e.code === "permission-denied") return "Firebase のルールに Logos & Dabar 用の許可がまだありません（Googleログイン設定手順.md を参照）";
-        return (e && (e.code || e.message)) || "不明なエラー";
+        if (e && e.code === "timeout") return e.message;
+        if (e && e.code === "unavailable") return "サーバーにつながりません（オフライン？）";
+        return (e && ((e.code ? e.code + " " : "") + (e.message || ""))) || "不明なエラー";
+      }
+
+      // クラウドに送る形に整える（空の項目を除き、長すぎる辞書の説明は短くして文書を軽く保つ）
+      function cloudItems(items) {
+        var out = JSON.parse(JSON.stringify(items));
+        var size = JSON.stringify(out).length;
+        if (size > 600000) out.forEach(function (w) { if (w.definition && w.definition.length > 400) w.definition = w.definition.slice(0, 400) + "…"; });
+        return out;
+      }
+
+      // 一定時間たっても応答がないときは、止まったままにせずエラーとして知らせる
+      function withTimeout(p, ms, label) {
+        return Promise.race([p, new Promise(function (_, rej) {
+          setTimeout(function () { var e = new Error(label + "（" + Math.round(ms / 1000) + "秒たっても応答がありません）"); e.code = "timeout"; rej(e); }, ms);
+        })]);
       }
 
       function writeRemote(merged) {
-        return docRef().set({
-          items: merged.items, t: merged.t, del: merged.del,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(function () {
+        var data;
+        try {
+          data = { items: cloudItems(merged.items), t: merged.t, del: merged.del, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        } catch (e) { setStatus("☁️ 送る準備に失敗しました: " + errText(e)); return Promise.resolve(); }
+        var p;
+        try { p = docRef().set(data); } catch (e) { setStatus("☁️ クラウドへの保存に失敗しました: " + errText(e)); return Promise.resolve(); }
+        return withTimeout(p, 20000, "クラウドへの保存").then(function () {
           syncedStatus();
         }).catch(function (e) { setStatus("☁️ クラウドへの保存に失敗しました: " + errText(e)); });
       }
@@ -5428,7 +5448,7 @@
           clearTimeout(pushTimer);
           pushTimer = setTimeout(function () {
             pushTimer = null;
-            docRef().get().then(function (snap) { syncWith(snap.exists ? snap.data() : null, false); })
+            withTimeout(docRef().get(), 20000, "クラウドからの読み込み").then(function (snap) { return syncWith(snap.exists ? snap.data() : null, false); })
               .catch(function (e) { setStatus("☁️ 同期できませんでした（オフライン？）: " + errText(e)); });
           }, 800);
         }
@@ -5440,7 +5460,10 @@
         unsub = docRef().onSnapshot(function (snap) {
           if (snap.metadata.hasPendingWrites) return;
           ready = true;
-          syncWith(snap.exists ? snap.data() : null, !snap.exists);
+          try {
+            var r = syncWith(snap.exists ? snap.data() : null, !snap.exists);
+            if (r && r.catch) r.catch(function (e) { setStatus("☁️ 同期に失敗しました: " + errText(e)); });
+          } catch (e) { setStatus("☁️ 同期に失敗しました: " + errText(e)); }
         }, function (e) { setStatus("☁️ 読み込みに失敗しました: " + errText(e)); });
       }
 
@@ -5463,6 +5486,7 @@
             firebase.initializeApp(cfg);
             auth = firebase.auth();
             db = firebase.firestore();
+            try { db.settings({ ignoreUndefinedProperties: true, experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}
             auth.getRedirectResult().catch(function (e) { setStatus("☁️ ログインに失敗しました: " + (e.code || e.message)); });
             auth.onAuthStateChanged(function (u) {
               if (unsub) { unsub(); unsub = null; }
@@ -5493,7 +5517,7 @@
         if (!user) return;
         document.querySelectorAll(".ld-autogrow").forEach(function (el) { if (typeof el._commit === "function") el._commit(); });
         setStatus("☁️ 同期中…");
-        docRef().get({ source: "server" }).then(function (snap) {
+        withTimeout(docRef().get({ source: "server" }), 20000, "クラウドからの読み込み").then(function (snap) {
           ready = true;
           return syncWith(snap.exists ? snap.data() : null, true);
         }).then(function () { showToast("クラウドと同期しました"); })
@@ -5675,7 +5699,7 @@
     })();
   </script>
 <script>
-  window.LD_APP_VERSION = '545cd175029f';
+  window.LD_APP_VERSION = '15521154153d';
   if ('serviceWorker' in navigator) {
     // 新しい版が公開されたら、アプリを開き直さなくても切り替える
     //  ・画面に戻ってきたとき／30分ごとに新しい版を確認

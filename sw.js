@@ -1,5 +1,5 @@
 // オフラインで動かすための仕組み(Service Worker)。make_pwa.py が pwa/sw.js を作ります。
-const CACHE = 'logos-dabar-545cd175029f';
+const CACHE = 'logos-dabar-15521154153d';
 const APP_FILES = [
   './',
   './index.html',
