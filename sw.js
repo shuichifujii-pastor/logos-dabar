@@ -1,5 +1,5 @@
 // オフラインで動かすための仕組み(Service Worker)。make_pwa.py が pwa/sw.js を作ります。
-const CACHE = 'logos-dabar-f8cabf137581';
+const CACHE = 'logos-dabar-d45dcb237516';
 const APP_FILES = [
   './',
   './index.html',
@@ -36,6 +36,8 @@ self.addEventListener('fetch', (event) => {
   if (req.url.includes('translate.googleapis.com')) return;
   // Googleログインとクラウド同期(Firebase)の通信はキャッシュしない
   if (/googleapis\.com|firebaseapp\.com|firebaseio\.com|accounts\.google\.com|apis\.google\.com/.test(req.url)) return;
+  // 地図のタイル画像は量が多いので保存しない（毎回ネットから取得）
+  if (req.url.includes('tile.openstreetmap.org')) return;
 
   if (req.mode === 'navigate') {
     event.respondWith(caches.match('./index.html').then((hit) => hit || fetch(req)));

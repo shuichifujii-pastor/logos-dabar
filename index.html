@@ -559,6 +559,9 @@
                 </div>
               </div>
 
+              <!-- 地名のとき: 現在の位置を地図で表示 -->
+              <div id="inspPlace" class="hidden"></div>
+
               <!-- Usage & Cross-References -->
               <div class="pt-2 border-t border-stone-100">
                 <div class="text-xs font-semibold text-stone-500 mb-1.5">主な用例・関連聖句</div>
@@ -2437,6 +2440,7 @@
       renderGrammarHelp(word);
       document.getElementById("inspGloss").textContent = word.gloss;
       document.getElementById("inspDefinition").textContent = word.definition;
+      if (window.LD_places) window.LD_places.show(document.getElementById("inspPlace"), word.strong);
 
       // Populate Interactive Syllable & Stress Prosody Guide
       const sylContainer = document.getElementById("inspSyllableGuide");
@@ -2582,6 +2586,7 @@
           <div class="text-sm font-bold text-stone-800 mt-1">${entry.gloss}</div>
           <p class="text-xs text-stone-600 leading-relaxed mt-1.5">${entry.definition}</p>
         `;
+        if (window.LD_places) window.LD_places.decorate(top, entry.strong);
 
         const bottom = document.createElement("div");
         bottom.className = "pt-3 border-t border-stone-100 flex items-center justify-between gap-2";
@@ -3094,6 +3099,7 @@
       waiters: new Map(),
       receiveIndex(data) { this.index = data; this._done("index"); },
       receiveLexicon(data) { this.lexicon = data; this._done("lexicon"); },
+      receivePlaces(data) { this.places = data; this._done("places"); },
       receiveSearch(data) { receiveSearchRows(data); this._done("search"); },
       receiveBook(code, rows) {
         const pos = new Map(rows.map((r, i) => [`${r[0]}:${r[1]}`, i]));
@@ -4691,6 +4697,162 @@
     })();
   </script>
 
+  <!-- 地名の現在の位置を地図に表示（位置: STEPBible TIPNR / 地図: OpenStreetMap + Leaflet） -->
+  <style>
+    .ld-place { border: 1px solid #bae6fd; background: #f0f9ff; border-radius: 0.6rem; padding: 10px 12px; }
+    .ld-place-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 13px; color: #0c4a6e; }
+    .ld-place-head b { font-size: 15px; color: #082f49; }
+    .ld-place-note { font-size: 11px; color: #9a3412; margin-top: 2px; }
+    .ld-place-map { height: 230px; border-radius: 0.5rem; margin-top: 8px; overflow: hidden; background: #e0f2fe; position: relative; z-index: 0; }
+    .ld-place-map .ld-place-off { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; font-size: 12px; color: #475569; }
+    .ld-place-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 10px; color: #64748b; }
+    .ld-place-foot a { color: #0369a1; font-weight: 600; text-decoration: underline; font-size: 12px; }
+    .ld-place-btn { display: inline-flex; align-items: center; gap: 3px; padding: 3px 9px; border-radius: 9999px; font-size: 11px; font-weight: 700; color: #0c4a6e; background: #e0f2fe; border: 1px solid #bae6fd; margin-top: 6px; }
+    .ld-place-btn:hover { background: #bae6fd; }
+  </style>
+  <script>
+    (function () {
+      var LEAFLET = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/";
+      var leafletReady = null, placesReady = null;
+
+      function loadPlaces() {
+        if (window.LD_BIBLE && LD_BIBLE.places) return Promise.resolve(LD_BIBLE.places);
+        if (!placesReady) {
+          placesReady = loadBibleScript("places", "bible/places.js").then(function () { return LD_BIBLE.places || {}; })
+            .catch(function () { placesReady = null; return {}; });
+        }
+        return placesReady;
+      }
+
+      function loadLeaflet() {
+        if (window.L && window.L.map) return Promise.resolve(window.L);
+        if (!leafletReady) {
+          leafletReady = new Promise(function (resolve, reject) {
+            var css = document.createElement("link");
+            css.rel = "stylesheet"; css.href = LEAFLET + "leaflet.min.css";
+            document.head.appendChild(css);
+            var js = document.createElement("script");
+            js.src = LEAFLET + "leaflet.min.js";
+            js.onload = function () { resolve(window.L); };
+            js.onerror = function () { leafletReady = null; reject(new Error("leaflet")); };
+            document.head.appendChild(js);
+          });
+        }
+        return leafletReady;
+      }
+
+      // "H1035G" "H9003/H1035G" "H430" → 地名データの番号
+      function findPlace(places, strong) {
+        var keys = String(strong || "").match(/[HG]\d+[A-Za-z]?/g) || [];
+        for (var i = 0; i < keys.length; i++) {
+          var m = /^([HG])0*(\d+)([A-Za-z]?)$/.exec(keys[i]);
+          if (!m) continue;
+          var base = m[1] + m[2].padStart(4, "0");
+          if (/^H90/.test(base)) continue; // 接頭辞（そして・その・～の中で など）
+          if (m[3] && places[base + m[3].toUpperCase()]) return base + m[3].toUpperCase();
+          if (places[base]) return base;
+          if (!m[3]) {
+            var cand = Object.keys(places).filter(function (k) { return k.indexOf(base) === 0 && /^[A-Za-z]$/.test(k.slice(base.length)); }).sort();
+            if (cand.length) return cand[0];
+          }
+        }
+        return null;
+      }
+
+      function noteJa(note) {
+        if (!note) return "";
+        var uncertain = note.indexOf("(?)") >= 0;
+        var t = note.replace("(?)", "").trim();
+        var out = "";
+        var m;
+        if ((m = /^near (.+)$/.exec(t))) out = "正確な場所は分かっていないため、近くの「" + m[1] + "」の位置を示しています";
+        else if ((m = /^in (.+)$/.exec(t))) out = "「" + m[1] + "」の中にある場所です";
+        else if ((m = /^between (.+)$/.exec(t))) out = "「" + m[1] + "」の間とされる場所です";
+        else if (t) out = t;
+        if (uncertain) out = (out ? out + "。" : "") + "位置は推定です";
+        return out;
+      }
+
+      function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+      function jaName(key) {
+        var lx = window.LD_BIBLE && LD_BIBLE.lexicon && LD_BIBLE.lexicon[key];
+        return lx ? (lx[4] || lx[2] || "") : "";
+      }
+
+      function drawMap(box, p, label) {
+        var mapEl = box.querySelector(".ld-place-map");
+        if (box._ldMap) { try { box._ldMap.remove(); } catch (e) {} box._ldMap = null; }
+        mapEl.innerHTML = '<div class="ld-place-off">地図を読み込み中…</div>';
+        loadLeaflet().then(function (L) {
+          if (!document.body.contains(mapEl)) return;
+          mapEl.innerHTML = "";
+          var map = L.map(mapEl, { scrollWheelZoom: false, attributionControl: true }).setView([p[0], p[1]], p[3] ? 9 : 10);
+          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+          }).addTo(map);
+          L.circleMarker([p[0], p[1]], { radius: 9, color: "#b91c1c", weight: 3, fillColor: "#ef4444", fillOpacity: 0.85 })
+            .addTo(map).bindTooltip(label, { permanent: true, direction: "top", offset: [0, -8] });
+          box._ldMap = map;
+          setTimeout(function () { map.invalidateSize(); }, 60);
+        }).catch(function () {
+          mapEl.innerHTML = '<div class="ld-place-off">インターネットにつながっていないため地図を表示できません。<br>下の「Googleマップで開く」から確認できます（接続時）。</div>';
+        });
+      }
+
+      function render(box, key, p) {
+        var ja = jaName(key);
+        var label = ja ? ja.split(/[・（(]/)[0] : p[2];
+        var note = noteJa(p[3]);
+        box.innerHTML = '<div class="ld-place">' +
+          '<div class="ld-place-head"><span>📍 地名</span><b>' + esc(ja || p[2]) + '</b><span>' + esc(p[2]) + '</span>' +
+          '<span style="color:#64748b">現在の位置 ' + p[0].toFixed(3) + ', ' + p[1].toFixed(3) + '</span></div>' +
+          (note ? '<div class="ld-place-note">※ ' + esc(note) + '</div>' : '') +
+          '<div class="ld-place-map"></div>' +
+          '<div class="ld-place-foot"><span>位置: STEPBible TIPNR（CC BY 4.0）。古代の場所の特定には諸説あり、地域名は代表地点です。</span>' +
+          '<a href="https://www.google.com/maps/search/?api=1&query=' + p[0] + ',' + p[1] + '" target="_blank" rel="noopener">Googleマップで開く ↗</a></div></div>';
+        drawMap(box, p, label);
+      }
+
+      window.LD_places = {
+        // 原語詳細: 地名なら地図を出し、それ以外なら隠す
+        show: function (box, strong) {
+          if (!box) return;
+          var token = (box._ldToken = (box._ldToken || 0) + 1);
+          box.classList.add("hidden");
+          if (box._ldMap) { try { box._ldMap.remove(); } catch (e) {} box._ldMap = null; }
+          loadPlaces().then(function (places) {
+            if (token !== box._ldToken) return;
+            var key = findPlace(places, strong);
+            if (!key) { box.innerHTML = ""; return; }
+            box.classList.remove("hidden");
+            render(box, key, places[key]);
+          });
+        },
+        // 原典辞書のカード: 地名なら「📍 地図で見る」ボタンを付ける
+        decorate: function (cardTop, strong) {
+          loadPlaces().then(function (places) {
+            var key = findPlace(places, strong);
+            if (!key || !document.body.contains(cardTop)) return;
+            var btn = document.createElement("button");
+            btn.type = "button"; btn.className = "ld-place-btn"; btn.textContent = "📍 地図で見る";
+            var box = document.createElement("div");
+            box.className = "hidden mt-2";
+            btn.addEventListener("click", function () {
+              var open = box.classList.toggle("hidden") === false;
+              btn.textContent = open ? "📍 地図を閉じる" : "📍 地図で見る";
+              if (open && !box.firstChild) render(box, key, places[key]);
+              else if (open && box._ldMap) setTimeout(function () { box._ldMap.invalidateSize(); }, 30);
+            });
+            cardTop.appendChild(btn);
+            cardTop.appendChild(box);
+          });
+        },
+        _find: function (strong) { return loadPlaces().then(function (p) { return findPlace(p, strong); }); }
+      };
+    })();
+  </script>
+
   <!-- ギリシア語の学習ゲーム（原典入門 → 新約 → 🎮 学習ゲーム） -->
   <style>
     .gg { font-size: 14px; color: #292524; }
@@ -5722,7 +5884,7 @@
     })();
   </script>
 <script>
-  window.LD_APP_VERSION = 'f8cabf137581';
+  window.LD_APP_VERSION = 'd45dcb237516';
   if ('serviceWorker' in navigator) {
     // 新しい版が公開されたら、アプリを開き直さなくても切り替える
     //  ・画面に戻ってきたとき／30分ごとに新しい版を確認
