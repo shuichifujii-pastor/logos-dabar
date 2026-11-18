@@ -2278,15 +2278,21 @@
       return _unifiedLexiconCache;
     }
 
-    // 文法に基づく直訳（bible/lit_<書>.js。新約のみ・用意できた書だけ）
+    // 文法に基づく直訳（bible/lit_<書>.js。用意できた書だけ）
     const _literalTried = new Set();
     function updateLiteral(verse) {
       const box = document.getElementById("verseLiteralBox");
       if (!box) return;
       box.classList.add("hidden");
-      if (!verse || verse.testament !== "NT") return;
+      if (!verse) return;
       const pos = currentFullPos();
-      if (!pos) return;
+      if (!pos || !pos.code) {
+        // 起動直後は書の索引がまだ読み込まれていないことがある。少し待って再試行する
+        if ((verse._litRetry = (verse._litRetry || 0) + 1) <= 8) {
+          setTimeout(() => { if (currentVerseId === verse.id) updateLiteral(verse); }, 400);
+        }
+        return;
+      }
       const data = LD_BIBLE.literal && LD_BIBLE.literal[pos.code];
       if (data) {
         const t = data[pos.c + ":" + pos.v];
@@ -5918,7 +5924,7 @@
     })();
   </script>
 <script>
-  window.LD_APP_VERSION = '703cde1859f4';
+  window.LD_APP_VERSION = '1eafef1a1957';
   if ('serviceWorker' in navigator) {
     // 新しい版が公開されたら、アプリを開き直さなくても切り替える
     //  ・画面に戻ってきたとき／30分ごとに新しい版を確認
